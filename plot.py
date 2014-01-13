@@ -4,7 +4,7 @@ import numpy as np
 import scipy.stats as sp
 
 
-def plot(dimZ, params):
+def plot(params):
 	W1 = params[0]
 	W2 = params[1]
 

@@ -3,147 +3,114 @@ Project AI
 Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
-import gzip,cPickle
 
 import numpy as np
 import theano as th
-from plot import plot
 
 import theano.tensor as T
 
-def load_mnist():
-    f = gzip.open('mnist.pkl.gz', 'rb')
-    data = cPickle.load(f)
-    f.close()
-    return data
+class AEVB:
 
-def initialize(HU_Decoder, HU_Encoder, dimX, dimZ):
-    sigmaInit = 0.01
-    #initialize theta for decoder
-    W1 = np.random.normal(0,sigmaInit,(HU_Decoder,dimZ))
-    b1 = np.zeros([HU_Decoder,1])
+    def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, L=1, learning_rate=0.01):
+        self.HU_decoder = HU_decoder
+        self.HU_encoder = HU_encoder
+        
+        self.dimX = dimX
+        self.dimZ = dimZ
 
-    W2 = np.random.normal(0,sigmaInit,(dimX,HU_Decoder))
-    b2 = np.zeros([dimX,1])
+        self.L = L
+        self.learning_rate = learning_rate
 
-    #initialize phi for encoder
-    W3 = np.random.normal(0,sigmaInit,(HU_Encoder,dimX))
-    b3 = np.zeros([HU_Encoder,1])
+        self.h = [0.000001]*10
+        self.sigmaInit = 0.01
 
-    W4 = np.random.normal(0,sigmaInit,(dimZ,HU_Encoder))
-    b4 = np.zeros([dimZ,1])
 
-    W5 = np.random.normal(0,sigmaInit,(dimZ,HU_Encoder))
-    b5 = np.zeros([dimZ,1])
+    def initParams(self):
+        #initialize theta for decoder
+        W1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,self.dimZ))
+        b1 = np.zeros([self.HU_decoder,1])
 
-    #Create one list with parameters
-    params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
+        W2 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
+        b2 = np.zeros([self.dimX,1])
 
-    return params
+        #initialize phi for encoder
+        W3 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
+        b3 = np.zeros([self.HU_encoder,1])
 
-def initGrad(dimZ):
-    #Create the Theano variables
-    W1,W2,W3,W4,W5,x,eps = T.dmatrices("W1","W2","W3","W4","W5","x","eps")
+        W4 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
+        b4 = np.zeros([self.dimZ,1])
 
-    #Create biases as cols so they can be broadcasted for minibatches
-    b1,b2,b3,b4,b5 = T.dcols("b1","b2","b3","b4","b5")
+        W5 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
+        b5 = np.zeros([self.dimZ,1])
 
-    #Set up the equations for encoding
-    #Something here is wrong, W3 gradient is fully zero
-    h = T.tanh(T.dot(W3,x) + b3)
+        #Create one list with parameters
+        self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
 
-    mu = T.dot(W4,h) + b4
-    sigma = T.sqrt(T.exp(T.dot(W5,h) + b5))
+    def createGradientFunctions(self):
+        #Create the Theano variables
+        W1,W2,W3,W4,W5,x,eps = T.dmatrices("W1","W2","W3","W4","W5","x","eps")
 
-    #Find the hidden variable z
-    z = mu + sigma*eps
+        #Create biases as cols so they can be broadcasted for minibatches
+        b1,b2,b3,b4,b5 = T.dcols("b1","b2","b3","b4","b5")
 
-    #Set up the equation for decoding
-    y = 1. / (1 + T.exp(-(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)))
+        #Set up the equations for encoding
+        #Something here is wrong, W3 gradient is fully zero
+        h = T.tanh(T.dot(W3,x) + b3)
 
-    # y = th.printing.Print('value of y:')(y)
+        mu = T.dot(W4,h) + b4
+        sigma = T.sqrt(T.exp(T.dot(W5,h) + b5))
 
-    #Set up likelihood
-    logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
-    
-    #Set up q (??) 
-    logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
+        #Find the hidden variable z
+        z = mu + sigma*eps
 
-    #Choose prior
-    logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
-    
-    #Define lowerbound
-    logp = logpxz + logpz - logqzx
+        #Set up the equation for decoding
+        y = 1. / (1 + T.exp(-(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)))
 
-    #Compute all the gradients
-    derivatives = T.grad(logp,[W1,W2,W3,W4,W5,b1,b2,b3,b4,b5])
+        # y = th.printing.Print('value of y:')(y)
 
-    f = th.function([W1,W2,W3,W4,W5,b1,b2,b3,b4,b5,x,eps], derivatives, on_unused_input='ignore')
+        #Set up likelihood
+        logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
+        
+        #Set up q (??) 
+        logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
 
-    return f
+        #Choose prior
+        logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
+        
+        #Define lowerbound
+        logp = logpxz + logpz - logqzx
 
-def iterate(params, f, miniBatch, L):
-    """Compute the gradients for one miniBatch and return the updated parameters"""
-    totalGradients = [None] * 10
-    for l in xrange(L):
-        dimZ = params[9].shape[0]
+        #Compute all the gradients
+        derivatives = T.grad(logp,[W1,W2,W3,W4,W5,b1,b2,b3,b4,b5])
+
+        self.gradientfunction = th.function([W1,W2,W3,W4,W5,b1,b2,b3,b4,b5,x,eps], derivatives, on_unused_input='ignore')
+
+    def iterate(self, miniBatch, N):
+        """Compute the gradients for one miniBatch and return the updated parameters"""
         batchSize = miniBatch.shape[1]
+        totalGradients = self.getGradients(miniBatch,batchSize)
+        self.updateParams(totalGradients,batchSize,N)
 
-        e = np.random.normal(0,1,[dimZ,batchSize])
-        gradients = f(*(params),x=miniBatch,eps=e)
+    def getGradients(self,miniBatch,batchSize):
+        totalGradients = [0] * 10
+        for l in xrange(self.L):
+            e = np.random.normal(0,1,[self.dimZ,batchSize])
+            gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
 
-        for i in xrange(len(gradients)):
-            if np.isnan(np.sum(gradients[i])):
-                print "The gradients contain nans, that cannot be right"
-                exit()
+            for i in xrange(len(gradients)):
+                if np.isnan(np.sum(gradients[i])):
+                    print "The gradients contain nans, that cannot be right"
+                    exit()
 
-            if totalGradients[i] == None:
-                totalGradients[i] = gradients[i]
-            else:
                 totalGradients[i] += gradients[i]
-    return totalGradients
 
-def sga():
-    HU_Decoder = 100
-    HU_Encoder = 100
+        return totalGradients
 
-    L = 1
-    dimZ = 2
-    learningrate = 0.01
+    def updateParams(self,totalGradients,batchSize,N):
+        for i in xrange(len(self.params)):
+            self.h[i] += totalGradients[i]*totalGradients[i]
+            prior = self.params[i]*(i<5)
 
-    batchSize = 100
+            #Include adagrad, include prior for weights
+            self.params[i] = self.params[i] + (self.learning_rate/np.sqrt(self.h[i])) * (totalGradients[i] - prior*(batchSize/N))
 
-    h = [0.0001]*10
-
-    print "Loading MNIST data"
-    (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
-    data = np.concatenate((x_train,x_valid))
-
-    print "Initializing weights and biases"
-    [N,dimX] = data.shape
-
-    params = initialize(HU_Decoder, HU_Encoder, dimX, dimZ)
-
-    print "Creating Theano functions"
-    f = initGrad(dimZ)
-
-    print "Iterating"
-    batches = np.linspace(0,N,N/batchSize+1)
-    for j in xrange(3):
-        print 'iteration ', j
-        for i in xrange(0,len(batches)-2):
-            miniBatch = data[batches[i]:batches[i+1]]
-            totalGradients = iterate(params, f, miniBatch.T, L)
-
-            #Update the parameters
-            for i in xrange(len(params)):
-                h[i] += totalGradients[i]*totalGradients[i]
-
-                #Include adagrad, include prior for weights
-                prior = params[i]*(i<5)
-                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * (totalGradients[i] - prior*(batchSize/N))
-    print "Plotting"
-    plot(dimZ,params)
-
-if __name__ == "__main__":
-    sga()
