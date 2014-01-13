@@ -53,7 +53,9 @@ def initGrad(dimZ):
     b1,b2,b3,b4,b5 = T.dcols("b1","b2","b3","b4","b5")
 
     #Set up the equations for encoding
+    #Something here is wrong, W3 gradient is fully zero
     h = T.tanh(T.dot(W3,x) + b3)
+
     mu = T.dot(W4,h) + b4
     sigma = T.sqrt(T.exp(T.dot(W5,h) + b5))
 
@@ -67,13 +69,13 @@ def initGrad(dimZ):
 
     #Set up likelihood
     logpxz = T.sum(x*T.log(y) - (1-x)*T.log(1 - y))
-
+    
     #Set up q (??) 
-    logqzx = T.sum(-(z - mu)**2/(2*sigma**2) - 0.5 * T.log(2 * np.pi * sigma**2))
+    logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
 
     #Choose prior
     logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
-
+    
     #Define lowerbound
     logp = logpxz + logpz - logqzx
 
@@ -93,8 +95,10 @@ def iterate(params, f, miniBatch, L):
 
         e = np.random.normal(0,1,[dimZ,batchSize])
         gradients = f(*(params),x=miniBatch,eps=e)
+        print "W3",gradients[2]
 
         for i in xrange(len(gradients)):
+            # print i,gradients[i]
             if np.isnan(np.sum(gradients[i])):
                 print "The gradients contain nans, that cannot be right"
                 exit()
@@ -107,14 +111,13 @@ def iterate(params, f, miniBatch, L):
     return totalGradients
 
 def plot(dimZ, params):
-    z = np.matrix([sp.stats.invgauss.cdf(0.1,1),sp.stats.invgauss.cdf(0.1,1)]).T
-
     W1 = params[0]
     W2 = params[1]
 
     b1 = params[5]
     b2 = params[6]
 
+    z = np.matrix([sp.stats.invgauss.cdf(0.1,1),sp.stats.invgauss.cdf(0.1,1)]).T
     y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
 
     plt.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
@@ -125,12 +128,12 @@ def sga():
     HU_Decoder = 100
     HU_Encoder = 100
 
-    L = 1
+    L = 3
     dimZ = 2
 
     learningrate = 0.01
 
-    h = [None]*10
+    h = [0.0001]*10
 
     print "Loading MNIST data"
     (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
@@ -144,22 +147,27 @@ def sga():
     f = initGrad(dimZ)
 
     print "Iterating"
-    batches = np.linspace(0,10,11)
+    batchSize = 100
+    dataSamples = 20000
 
-    for i in xrange(0,len(batches)-2):
-        miniBatch = x_train[batches[i]:batches[i+1]]
-        totalGradients = iterate(params, f, miniBatch.T, L)
+    batches = np.linspace(0,dataSamples,dataSamples/batchSize+1)
+    # batches = np.linspace(0,2,3)
 
-        #Update the parameters
-        for i in xrange(len(params)):
-            if h[i] == None:
-                h[i] = totalGradients[i]*totalGradients[i]
-            else:
-                h[i] += totalGradients[i]*totalGradients[i]
+    for j in xrange(5):
+        for i in xrange(0,len(batches)-2):
+            miniBatch = x_train[batches[i]:batches[i+1]]
+            totalGradients = iterate(params, f, miniBatch.T, L)
 
-            prior = 0
-            #Include adagrad
-            params[i] = params[i] + (learningrate / np.sqrt(h[i])) * totalGradients[i] + prior
+            #Update the parameters
+            for i in xrange(len(params)):
+                if h[i] == None:
+                    h[i] = totalGradients[i]*totalGradients[i]
+                else:
+                    h[i] += totalGradients[i]*totalGradients[i]
+
+                prior = 0
+                #Include adagrad
+                params[i] = params[i] + (learningrate/h[i]) * totalGradients[i] + prior
 
     print "Plotting"
     plot(dimZ,params)
