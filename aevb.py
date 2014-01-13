@@ -6,11 +6,9 @@ Otto Fabius - 5619858
 
 import numpy as np
 import theano as th
-
 import theano.tensor as T
 
 class AEVB:
-
     def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, L=1, learning_rate=0.01):
         self.HU_decoder = HU_decoder
         self.HU_encoder = HU_encoder
