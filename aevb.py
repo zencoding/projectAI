@@ -4,21 +4,17 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
-import gzip, cPickle
-
 import numpy as np
 import theano as th
 from plot import plot
 
 import theano.tensor as T
 
-
 def load_mnist():
     f = gzip.open('mnist.pkl.gz', 'rb')
     data = cPickle.load(f)
     f.close()
     return data
-
 
 def initialize(HU_Decoder, HU_Encoder, dimX, dimZ):
     sigmaInit = 0.01
@@ -96,7 +92,6 @@ def iterate(params, f, miniBatch, L):
         gradients = f(*(params),x=miniBatch,eps=e)
 
         for i in xrange(len(gradients)):
-            # print i, gradients[i]
             if np.isnan(np.sum(gradients[i])):
                 print "The gradients contain nans, that cannot be right"
                 exit()
@@ -105,7 +100,6 @@ def iterate(params, f, miniBatch, L):
                 totalGradients[i] = gradients[i]
             else:
                 totalGradients[i] += gradients[i]
-
     return totalGradients
 
 def sga():
@@ -114,16 +108,17 @@ def sga():
 
     L = 1
     dimZ = 2
-
-    learningrate = 0.01
+    batchSize = 100
+    dataSamples = 70000
+    learningrate = 0.05
 
     h = [0.0001]*10
 
     print "Loading MNIST data"
-    (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
+    data = load_mnist
 
     print "Initializing weights and biases"
-    [N,dimX] = x_train.shape
+    [N,dimX] = data.shape
 
     params = initialize(HU_Decoder, HU_Encoder, dimX, dimZ)
 
@@ -135,21 +130,25 @@ def sga():
     dataSamples = 50000
 
     batches = np.linspace(0,dataSamples,dataSamples/batchSize+1)
-    # batches = np.linspace(0,2,3)
 
     for j in xrange(3):
+        print 'iteration ', j
         for i in xrange(0,len(batches)-2):
-            miniBatch = x_train[batches[i]:batches[i+1]]
+            miniBatch = data[batches[i]:batches[i+1]]
             totalGradients = iterate(params, f, miniBatch.T, L)
 
             #Update the parameters
             for i in xrange(len(params)):
                 h[i] += totalGradients[i]*totalGradients[i]
 
+                if i<=5: 
+                    prior = np.abs(params[i])
+                else:
+                    prior = 0
                 prior = 0
-                #Include adagrad
-                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * totalGradients[i] + prior
 
+                #Include adagrad
+                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * (totalGradients[i] + prior)
     print "Plotting"
     plot(dimZ,params)
 
