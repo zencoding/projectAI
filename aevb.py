@@ -4,22 +4,12 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
-import gzip, cPickle
-
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 import theano as th
 
 import theano.tensor as T
-
-
-def load_mnist():
-    f = gzip.open('mnist.pkl.gz', 'rb')
-    data = cPickle.load(f)
-    f.close()
-    return data
-
 
 def initialize(HU_Decoder, HU_Encoder, dimX, dimZ):
     sigmaInit = 0.01
@@ -68,7 +58,7 @@ def initGrad(dimZ):
     # y = th.printing.Print('value of y:')(y)
 
     #Set up likelihood
-    logpxz = T.sum(x*T.log(y) - (1-x)*T.log(1 - y))
+    logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
     
     #Set up q (??) 
     logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
@@ -95,10 +85,8 @@ def iterate(params, f, miniBatch, L):
 
         e = np.random.normal(0,1,[dimZ,batchSize])
         gradients = f(*(params),x=miniBatch,eps=e)
-        print "W3",gradients[2]
 
         for i in xrange(len(gradients)):
-            # print i,gradients[i]
             if np.isnan(np.sum(gradients[i])):
                 print "The gradients contain nans, that cannot be right"
                 exit()
@@ -107,7 +95,6 @@ def iterate(params, f, miniBatch, L):
                 totalGradients[i] = gradients[i]
             else:
                 totalGradients[i] += gradients[i]
-
     return totalGradients
 
 def plot(dimZ, params):
@@ -117,29 +104,29 @@ def plot(dimZ, params):
     b1 = params[5]
     b2 = params[6]
 
-    z = np.matrix([sp.stats.invgauss.cdf(0.1,1),sp.stats.invgauss.cdf(0.1,1)]).T
-    y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
-
-    plt.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
-    plt.show()
-
+    for num in xrange(1):
+        z = np.matrix([sp.stats.invgauss.cdf(0.1*num,1),sp.stats.invgauss.cdf(0.1*num,1)]).T
+        y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
+        plt.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
+        plt.show()
 
 def sga():
     HU_Decoder = 100
     HU_Encoder = 100
 
-    L = 3
+    L = 1
     dimZ = 2
-
-    learningrate = 0.01
+    batchSize = 100
+    dataSamples = 70000
+    learningrate = 0.05
 
     h = [0.0001]*10
 
     print "Loading MNIST data"
-    (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
+    data = np.load('MNIST_USP_Data.npy')
 
     print "Initializing weights and biases"
-    [N,dimX] = x_train.shape
+    [N,dimX] = data.shape
 
     params = initialize(HU_Decoder, HU_Encoder, dimX, dimZ)
 
@@ -147,15 +134,14 @@ def sga():
     f = initGrad(dimZ)
 
     print "Iterating"
-    batchSize = 100
-    dataSamples = 20000
+
 
     batches = np.linspace(0,dataSamples,dataSamples/batchSize+1)
-    # batches = np.linspace(0,2,3)
 
-    for j in xrange(5):
+    for j in xrange(2):
+        print 'iteration ', j
         for i in xrange(0,len(batches)-2):
-            miniBatch = x_train[batches[i]:batches[i+1]]
+            miniBatch = data[batches[i]:batches[i+1]]
             totalGradients = iterate(params, f, miniBatch.T, L)
 
             #Update the parameters
@@ -165,10 +151,14 @@ def sga():
                 else:
                     h[i] += totalGradients[i]*totalGradients[i]
 
+                if i<=5: 
+                    prior = np.abs(params[i])
+                else:
+                    prior = 0
                 prior = 0
-                #Include adagrad
-                params[i] = params[i] + (learningrate/h[i]) * totalGradients[i] + prior
 
+                #Include adagrad
+                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * (totalGradients[i] + prior)
     print "Plotting"
     plot(dimZ,params)
 
