@@ -3,6 +3,7 @@ Project AI
 Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
+import gzip,cPickle
 
 import numpy as np
 import theano as th
@@ -108,14 +109,15 @@ def sga():
 
     L = 1
     dimZ = 2
+    learningrate = 0.01
+
     batchSize = 100
-    dataSamples = 70000
-    learningrate = 0.05
 
     h = [0.0001]*10
 
     print "Loading MNIST data"
-    data = load_mnist
+    (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
+    data = np.concatenate((x_train,x_valid))
 
     print "Initializing weights and biases"
     [N,dimX] = data.shape
@@ -126,11 +128,7 @@ def sga():
     f = initGrad(dimZ)
 
     print "Iterating"
-    batchSize = 100
-    dataSamples = 50000
-
-    batches = np.linspace(0,dataSamples,dataSamples/batchSize+1)
-
+    batches = np.linspace(0,N,N/batchSize+1)
     for j in xrange(3):
         print 'iteration ', j
         for i in xrange(0,len(batches)-2):
@@ -141,14 +139,9 @@ def sga():
             for i in xrange(len(params)):
                 h[i] += totalGradients[i]*totalGradients[i]
 
-                if i<=5: 
-                    prior = np.abs(params[i])
-                else:
-                    prior = 0
-                prior = 0
-
-                #Include adagrad
-                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * (totalGradients[i] + prior)
+                #Include adagrad, include prior for weights
+                prior = params[i]*(i<5)
+                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * (totalGradients[i] - prior*(batchSize/N))
     print "Plotting"
     plot(dimZ,params)
 
