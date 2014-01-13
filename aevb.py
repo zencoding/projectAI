@@ -7,9 +7,8 @@ Otto Fabius - 5619858
 import gzip, cPickle
 
 import numpy as np
-import scipy as sp
-import matplotlib.pyplot as plt
 import theano as th
+from plot import plot
 
 import theano.tensor as T
 
@@ -68,7 +67,7 @@ def initGrad(dimZ):
     # y = th.printing.Print('value of y:')(y)
 
     #Set up likelihood
-    logpxz = T.sum(x*T.log(y) - (1-x)*T.log(1 - y))
+    logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
     
     #Set up q (??) 
     logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
@@ -95,10 +94,9 @@ def iterate(params, f, miniBatch, L):
 
         e = np.random.normal(0,1,[dimZ,batchSize])
         gradients = f(*(params),x=miniBatch,eps=e)
-        print "W3",gradients[2]
 
         for i in xrange(len(gradients)):
-            # print i,gradients[i]
+            # print i, gradients[i]
             if np.isnan(np.sum(gradients[i])):
                 print "The gradients contain nans, that cannot be right"
                 exit()
@@ -110,25 +108,11 @@ def iterate(params, f, miniBatch, L):
 
     return totalGradients
 
-def plot(dimZ, params):
-    W1 = params[0]
-    W2 = params[1]
-
-    b1 = params[5]
-    b2 = params[6]
-
-    z = np.matrix([sp.stats.invgauss.cdf(0.1,1),sp.stats.invgauss.cdf(0.1,1)]).T
-    y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
-
-    plt.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
-    plt.show()
-
-
 def sga():
     HU_Decoder = 100
     HU_Encoder = 100
 
-    L = 3
+    L = 1
     dimZ = 2
 
     learningrate = 0.01
@@ -148,26 +132,23 @@ def sga():
 
     print "Iterating"
     batchSize = 100
-    dataSamples = 20000
+    dataSamples = 50000
 
     batches = np.linspace(0,dataSamples,dataSamples/batchSize+1)
     # batches = np.linspace(0,2,3)
 
-    for j in xrange(5):
+    for j in xrange(3):
         for i in xrange(0,len(batches)-2):
             miniBatch = x_train[batches[i]:batches[i+1]]
             totalGradients = iterate(params, f, miniBatch.T, L)
 
             #Update the parameters
             for i in xrange(len(params)):
-                if h[i] == None:
-                    h[i] = totalGradients[i]*totalGradients[i]
-                else:
-                    h[i] += totalGradients[i]*totalGradients[i]
+                h[i] += totalGradients[i]*totalGradients[i]
 
                 prior = 0
                 #Include adagrad
-                params[i] = params[i] + (learningrate/h[i]) * totalGradients[i] + prior
+                params[i] = params[i] + (learningrate/np.sqrt(h[i])) * totalGradients[i] + prior
 
     print "Plotting"
     plot(dimZ,params)
