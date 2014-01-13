@@ -59,8 +59,8 @@ def logistic_regression():
 
 	(x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 	wEncode = load json
-	h_train = x_train.dot(wEncode.T)
-	h_test = x_test.dot(wEncode.T)
+	h_train = np.tanh(x_train.dot(wEncode.T))
+	h_test = np.tanh(x_test.dot(wEncode.T))
 
 	#Durk --> initialize 0?
 	w = np.zeros([len(h_train), 10])
