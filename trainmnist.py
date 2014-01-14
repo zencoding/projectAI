@@ -55,4 +55,3 @@ for j in xrange(30):
         print "Saving params in: {0}".format(args.save)
         np.save(args.save,encoder.params)	
         np.save('h'+args.save,encoder.h)
-

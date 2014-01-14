@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as sp
 
-def plot(params):
+def plot(params, numPixels):
 	W1 = params[0]
 	W2 = params[1]
 
@@ -20,12 +20,8 @@ def plot(params):
 			z = np.matrix([sp.invgauss.cdf(gridValues[i],1),sp.invgauss.cdf(gridValues[j],1)]).T
 			y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
 			ax = fig.add_subplot(gs[i,j])
-			ax.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
+			ax.imshow(y.reshape((numPixels,numPixels)), interpolation='nearest', cmap='Greys')
 			plt.axis('off')
 
 	fig.patch.set_facecolor('white')
 	plt.savefig('manifold.png')
-
-params = np.load('params.npy')
-plot(params)
-
