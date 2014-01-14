@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as sp
 
-
 def plot(params):
 	W1 = params[0]
 	W2 = params[1]
@@ -26,3 +25,7 @@ def plot(params):
 
 	fig.patch.set_facecolor('white')
 	plt.savefig('manifold.png')
+
+params = np.load('params.npy')
+plot(params)
+

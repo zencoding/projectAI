@@ -22,24 +22,23 @@ class AEVB:
         self.h = [0.000001]*10
         self.sigmaInit = 0.01
 
-
     def initParams(self):
         #initialize theta for decoder
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,self.dimZ))
-        b1 = np.zeros([self.HU_decoder,1])
+        b1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,1))
 
         W2 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
-        b2 = np.zeros([self.dimX,1])
+        b2 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
 
         #initialize phi for encoder
         W3 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
-        b3 = np.zeros([self.HU_encoder,1])
+        b3 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,1))
 
         W4 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
-        b4 = np.zeros([self.dimZ,1])
+        b4 = np.random.normal(0,self.sigmaInit,(self.dimZ,1))
 
         W5 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
-        b5 = np.zeros([self.dimZ,1])
+        b5 = np.random.normal(0,self.sigmaInit,(self.dimZ,1))
 
         #Create one list with parameters
         self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
