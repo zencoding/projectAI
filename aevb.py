@@ -22,6 +22,8 @@ class AEVB:
         self.h = [0.0001] * 10
         self.lowerbound = 0
 
+        self.continuous = False
+
     def initParams(self):
         #initialize theta for decoder
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,self.dimZ))
@@ -68,14 +70,15 @@ class AEVB:
         z = mu + sigma*eps
 
         #Set up the equation for decoding
-        # y = 1. / 1 + T.exp(-(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2))
         y = T.nnet.sigmoid(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)
 
         # y = th.printing.Print('value of y:')(y)
 
         #Set up likelihood
-        # logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
-        logpxz = -T.nnet.binary_crossentropy(y,x).sum()
+        if self.continuous:
+            logpxz = -0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - T.dot(T.dot((x-y).T,self.invcov),(x - y))/2
+        else:
+            logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
         #Set up q (??) 
         logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
