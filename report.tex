@@ -1,0 +1,57 @@
+\documentclass{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+
+\renewcommand{\thesection}{\arabic{section}}
+
+\begin{document}
+
+\title{Project AI \\ Auto-Encoding Variational Bayes}
+\author{	
+	Joost van Amersfoort \\ 10021248  
+	\and
+	Otto Fabius \\ 5619858
+	}
+\maketitle
+
+\section*{Introduction}
+background literature \\ 
+
+
+
+\section*{AEVB}
+Method Description \\
+
+In generative Bayesian modelling, the posterior probability of some dataset $\mathbf{X}$ reflects how well the model performs. When we model how $P(x)$ depends on some underlying random process, i.e. hidden variables $\mathbf{z}$ generated from a prior distribution $P(z)$, we can express the posterior probability by reformulating Bayes' Rule:
+
+\begin{align*}
+P(X) = \frac{P(X|Z)P(Z)}{P(Z|X)}
+\end{align*}
+
+In the class of problems we are interested in, the following conditions apply:
+\begin{itemize}
+\item The posterior distribution $P(Z|X)$ is intractable. 
+\item the probability density function of both the prior $P(z)$ and the likelihood $P(x|z)$ are differentiable w.r.t. $z$ (and theta.....). 
+\end{itemize}
+
+\section*{Experiments}
+
+Describe algorithms,datasets, param choices, and motivate.
+
+\section*{Results}
+
+Shiny pictures with captions
+
+\section*{Discussion}
+
+what worked well/what didn't? Why? Possible improvements/further directions for research?
+
+\section*{Conclusion}
+
+
+
+\section*{References}
+
+
+\end{document}
