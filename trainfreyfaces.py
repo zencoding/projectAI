@@ -10,6 +10,11 @@ import numpy as np
 import cPickle
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--params", help="Specify param file", default = False)
+parser.add_argument("-s", "--save", help="Specify file to save params", default = False)
+
+args = parser.parse_args()
 
 data = load_ff()/256.
 
@@ -19,8 +24,8 @@ logdetcov = np.linalg.slogdet(cov)
 
 
 [N,dimX] = data.shape
-HU_decoder = 500
-HU_encoder = 500
+HU_decoder = 100
+HU_encoder = 100
 dimZ = 2
 L = 1
 learning_rate = 0.1
