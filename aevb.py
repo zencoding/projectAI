@@ -12,15 +12,15 @@ class AEVB:
     def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, L=1, learning_rate=0.01):
         self.HU_decoder = HU_decoder
         self.HU_encoder = HU_encoder
-        
+
         self.dimX = dimX
         self.dimZ = dimZ
-
         self.L = L
         self.learning_rate = learning_rate
 
-        self.h = [0.000001]*10
         self.sigmaInit = 0.01
+        self.h = [0.0001] * 10
+        self.lowerbound = 0
 
     def initParams(self):
         #initialize theta for decoder
@@ -43,6 +43,13 @@ class AEVB:
         #Create one list with parameters
         self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
 
+    def initH(self,miniBatch):
+        batchSize = miniBatch.shape[1]
+        totalGradients = self.getGradients(miniBatch,batchSize)
+        for i in xrange(len(totalGradients)):
+            self.h[i] += totalGradients[i]*totalGradients[i]
+
+
     def createGradientFunctions(self):
         #Create the Theano variables
         W1,W2,W3,W4,W5,x,eps = T.dmatrices("W1","W2","W3","W4","W5","x","eps")
@@ -61,24 +68,28 @@ class AEVB:
         z = mu + sigma*eps
 
         #Set up the equation for decoding
-        y = 1. / (1 + T.exp(-(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)))
+        # y = 1. / 1 + T.exp(-(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2))
+        y = T.nnet.sigmoid(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)
 
         # y = th.printing.Print('value of y:')(y)
 
         #Set up likelihood
-        logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
-        
+        # logpxz = T.sum(x*T.log(y) + (1-x)*T.log(1 - y))
+        logpxz = -T.nnet.binary_crossentropy(y,x).sum()
+
         #Set up q (??) 
         logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
 
         #Choose prior
         logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
-        
+
         #Define lowerbound
         logp = logpxz + logpz - logqzx
 
         #Compute all the gradients
         derivatives = T.grad(logp,[W1,W2,W3,W4,W5,b1,b2,b3,b4,b5])
+
+        derivatives.append(logp)
 
         self.gradientfunction = th.function([W1,W2,W3,W4,W5,b1,b2,b3,b4,b5,x,eps], derivatives, on_unused_input='ignore')
 
@@ -93,8 +104,9 @@ class AEVB:
         for l in xrange(self.L):
             e = np.random.normal(0,1,[self.dimZ,batchSize])
             gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
+            self.lowerbound += gradients[10]
 
-            for i in xrange(len(gradients)):
+            for i in xrange(len(totalGradients)):
                 if np.isnan(np.sum(gradients[i])):
                     print "The gradients contain nans, that cannot be right"
                     exit()
