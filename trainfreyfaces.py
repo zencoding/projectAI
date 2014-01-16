@@ -16,15 +16,12 @@ parser.add_argument("-s", "--save", help="Specify file to save params", default 
 
 args = parser.parse_args()
 
-args = parser.parse_args()
-
 print "Loading and normalizing data"
 data = (load_ff()/256.).T
 
 [N,dimX] = data.shape
-
-HU_decoder = 100
-HU_encoder = 100
+HU_decoder = 200
+HU_encoder = 200
 
 dimZ = 2
 L = 1
