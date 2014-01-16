@@ -7,7 +7,9 @@ Otto Fabius - 5619858
 import numpy as np
 
 def logreg_gradients(x,t,w,b):
-    logq = w.T.dot(x) + b
+    print w.shape, x.shape, b.shape
+    logq = w.dot(x) + b
+    
         
     p = np.exp(logq - np.log(np.sum(np.exp(logq))))
     
@@ -19,14 +21,13 @@ def logreg_gradients(x,t,w,b):
     return (deltaw,deltab)
 
 def sgd_iter(x_train, t_train, w, b):
-    learningrate = 0.001
-    all_indices = np.arange(len(x_train),dtype=int)
-    np.random.shuffle(all_indices)
-        
-    for i in all_indices:
-        deltaw,deltab = logreg_gradients(x_train[i],t_train[i],w,b)
-        w += learningrate * deltaw
-        b += learningrate * deltab
+
+    batchSize, dimH = x_train.shape
+    learningrate = 0.001*np.sqrt(batchSize)
+    
+    deltaw,deltab = logreg_gradients(x_train,t_train,w,b)
+    w += learningrate * deltaw
+    b += learningrate * deltab
                 
     return (w,b)
 
