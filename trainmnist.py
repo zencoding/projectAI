@@ -36,29 +36,29 @@ encoder.createGradientFunctions()
 
 print "Initializing weights and biases"
 if args.params:
-	print "Loading params from: {0}".format(args.params)
-	encoder.params = np.load(args.params)
-	encoder.h = np.load('h'+args.params)
-	lowerbound = np.load('lowerbound'+args.params)
+    print "Loading params from: {0}".format(args.params)
+    encoder.params = np.load(args.params)
+    encoder.h = np.load('h'+args.params)
+    lowerbound = np.load('lowerbound'+args.params)
 else:
-	encoder.initParams()
-	for i in xrange(0,10):
-		encoder.initH(data[batchSize*i:batchSize*(i+1)].T)
-	lowerbound = []
+    encoder.initParams()
+    for i in xrange(0,10):
+            encoder.initH(data[batchSize*i:batchSize*(i+1)].T)
+    lowerbound = []
 
 print "Iterating"
 batches = np.linspace(0,N,N/batchSize+1)
 
-for j in xrange(100):
-	print 'Iteration:', j
-	encoder.lowerbound = 0
-	for i in xrange(0,len(batches)-2):
-		miniBatch = data[batches[i]:batches[i+1]]
-		encoder.iterate(miniBatch.T, N)
-	print encoder.lowerbound
-	lowerbound = np.append(lowerbound, encoder.lowerbound)
-	if args.save:
-		print "Saving params"
-		np.save(args.save,encoder.params)	
-		np.save('h' + args.save,encoder.h)
-		np.save('lowerbound' + args.save,lowerbound)
+for j in xrange(2000):
+    print 'Iteration:', j
+    encoder.lowerbound = 0
+    for i in xrange(0,len(batches)-2):
+        miniBatch = data[batches[i]:batches[i+1]]
+        encoder.iterate(miniBatch.T, N)
+    print encoder.lowerbounds/N
+    lowerbound = np.append(lowerbound,encoder.lowerbound/N)
+    if args.save:
+        print "Saving params"
+        np.save(args.save,encoder.params)	
+        np.save('h' + args.save,encoder.h)
+        np.save('lowerbound' + args.save,lowerbound)

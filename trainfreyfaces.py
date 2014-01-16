@@ -16,34 +16,27 @@ parser.add_argument("-s", "--save", help="Specify file to save params", default 
 
 args = parser.parse_args()
 
-data = load_ff()/256.
+args = parser.parse_args()
 
-cov = np.cov(data)
-invcov = np.linalg.inv(cov)
-logdetcov = np.linalg.slogdet(cov)
-
+print "Loading and normalizing data"
+data = (load_ff()/256.).T
 
 [N,dimX] = data.shape
+
 HU_decoder = 100
 HU_encoder = 100
+
 dimZ = 2
 L = 1
-learning_rate = 0.1
+learning_rate = 0.05
 
 batchSize = 100
 
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,L,learning_rate)
-
-cov = np.cov(data)
-invCov = np.linalg.inv(cov)
-logdet = np.linalg.slogdet(cov)
-encoder.invcov = invcov
-encoder.logdetcov = logdetcov
+encoder.continuous = True
 
 print "Creating Theano functions"
 encoder.createGradientFunctions()
-
-encoder.continuous = True
 
 print "Initializing weights and biases"
 if args.params:
@@ -65,9 +58,14 @@ for j in xrange(200):
 	encoder.lowerbound = 0
 	for i in xrange(0,len(batches)-2):
 		miniBatch = data[batches[i]:batches[i+1]]
+		cov = np.cov(miniBatch)
+		invcov = np.linalg.inv(cov)
+		encoder.invcov = invcov
+		(sign,logdetcov) = np.linalg.slogdet(cov)
+		encoder.logdetcov = sign*logdetcov
 		encoder.iterate(miniBatch.T, N)
-	print encoder.lowerbound
-	lowerbound.append(encoder.lowerbound)
+	print encoder.lowerbound/N
+	lowerbound = np.append(lowerbound,encoder.lowerbound/N)
 	if args.save:
 		print "Saving params"
 		np.save(args.save,encoder.params)	

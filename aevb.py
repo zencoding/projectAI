@@ -76,7 +76,7 @@ class AEVB:
 
         #Set up likelihood
         if self.continuous:
-            logpxz = -0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - T.dot(T.dot((x-y).T,self.invcov),(x - y))/2
+            logpxz = T.sum(-0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - T.dot(T.dot((x-y).T,self.invcov),(x - y))/2)
         else:
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 

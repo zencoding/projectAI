@@ -11,7 +11,7 @@ def plot(params, numPixels):
 	b2 = params[6]
 
 	gridSize = 15
-	gridValues = np.linspace(0.01,2,gridSize)
+        gridValues = np.linspace(0.1,1.5,gridSize)
 	gs = gridspec.GridSpec(gridSize, gridSize)
 
 	fig = plt.figure()
@@ -26,6 +26,5 @@ def plot(params, numPixels):
 	fig.patch.set_facecolor('white')
 	plt.savefig('manifold.png')
 
-
-params = np.load('params.npy')
+params = np.load("params.npy")
 plot(params,28)
