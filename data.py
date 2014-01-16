@@ -16,7 +16,6 @@ def load_cifar():
 
 
 def load_ff():
-	#plt.imshow((256-ff[:,2]).reshape(28,20),cmap='Greys')
 	f = open('freyfaces.pkl','rb')
 	data = cPickle.load(f)
 	f.close()

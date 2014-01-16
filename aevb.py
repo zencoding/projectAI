@@ -76,7 +76,7 @@ class AEVB:
 
         #Set up likelihood
         if self.continuous:
-            logpxz = T.sum(-0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - T.dot(T.dot((x-y).T,self.invcov),(x - y))/2)
+            logpxz = T.sum(-0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - 0.5*T.dot(T.dot((x-y).T,self.invcov),(x - y)))
         else:
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
@@ -92,6 +92,7 @@ class AEVB:
         #Compute all the gradients
         derivatives = T.grad(logp,[W1,W2,W3,W4,W5,b1,b2,b3,b4,b5])
 
+		#Add the lowerbound so we can keep track of results
         derivatives.append(logp)
 
         self.gradientfunction = th.function([W1,W2,W3,W4,W5,b1,b2,b3,b4,b5,x,eps], derivatives, on_unused_input='ignore')
