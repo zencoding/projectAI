@@ -25,3 +25,7 @@ def plot(params, numPixels):
 
 	fig.patch.set_facecolor('white')
 	plt.savefig('manifold.png')
+
+
+params = np.load('params.npy')
+plot(params,28)

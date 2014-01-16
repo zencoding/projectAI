@@ -23,9 +23,9 @@ data = np.concatenate((x_train,x_valid))
 [N,dimX] = data.shape
 HU_decoder = 500
 HU_encoder = 500
-dimZ = 2
+dimZ = 20
 L = 1
-learning_rate = 0.1
+learning_rate = 0.01
 
 batchSize = 100
 
@@ -49,14 +49,14 @@ else:
 print "Iterating"
 batches = np.linspace(0,N,N/batchSize+1)
 
-for j in xrange(200):
+for j in xrange(100):
 	print 'Iteration:', j
 	encoder.lowerbound = 0
 	for i in xrange(0,len(batches)-2):
 		miniBatch = data[batches[i]:batches[i+1]]
 		encoder.iterate(miniBatch.T, N)
 	print encoder.lowerbound
-	lowerbound.append(encoder.lowerbound)
+	lowerbound = np.append(lowerbound, encoder.lowerbound)
 	if args.save:
 		print "Saving params"
 		np.save(args.save,encoder.params)	

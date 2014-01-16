@@ -37,8 +37,8 @@ def check_correct(x,t,w,b):
     return (np.argmax(p) == t)
 
 def calculate_percentage(X,T,w,b):
-	numCorrect = 0
-	for i in xrange(size(x,0)):
+    num_correct = 0.
+    for i in xrange(X.shape[0]):
 	    num_correct += check_correct(X[i],T[i],w,b)
 
-	return num_correct*100/size(x,0)
+    return num_correct*100./X.shape[0]
