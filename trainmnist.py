@@ -20,15 +20,15 @@ print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 data = np.concatenate((x_train,x_valid))
 
-[N,dimX] = data.shape
-HU_decoder = 500
-HU_encoder = 500
 dimZ = 20
+HU_decoder = 500
+HU_encoder = HU_decoder
+
 L = 1
 learning_rate = 0.01
-
 batchSize = 100
 
+[N,dimX] = data.shape
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,L,learning_rate)
 
 print "Creating Theano functions"
