@@ -29,7 +29,6 @@ batches = np.linspace(0,N,N/batchSize+1)
 #np.random.shuffle(batches)
 train = []
 valid = []
->>>>>>> changed logregmnist slightly
 
 for i in xrange(iterations):
 	print 'iteration: ', i
@@ -45,7 +44,7 @@ for i in xrange(iterations):
     valid.append(valid_correct)
     train.append(train_correct)
     np.save('logreg_resultsT_dim20',train)	
-    np.save('logreg_resultsV_dim20',valid)
+    np.save('logreg_resultsV_dim20',valid_correct)
 
 train_correct = calculate_percentage(h_train,t_train,w,b)
 test_correct = calculate_percentage(h_test,t_test,w,b)
