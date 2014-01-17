@@ -21,12 +21,12 @@ print "Loading MNIST data"
 data = np.concatenate((x_train,x_valid))
 
 [N,dimX] = data.shape
-HU_decoder = 300
-HU_encoder = 300
+HU_decoder = 500
+HU_encoder = HU_decoder
 dimZ = 20
 batch_size = 100
 L = 1
-learning_rate = 0.05
+learning_rate = 0.01
 
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 
