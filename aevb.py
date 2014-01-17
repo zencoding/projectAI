@@ -9,7 +9,7 @@ import theano as th
 import theano.tensor as T
 
 class AEVB:
-    def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, L=1, learning_rate=0.01):
+    def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, batch_size, L=1, learning_rate=0.01):
         self.HU_decoder = HU_decoder
         self.HU_encoder = HU_encoder
 
@@ -17,6 +17,7 @@ class AEVB:
         self.dimZ = dimZ
         self.L = L
         self.learning_rate = learning_rate
+        self.batch_size = batch_size
 
         self.sigmaInit = 0.01
         self.h = [0.0001] * 10
@@ -46,8 +47,7 @@ class AEVB:
         self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
 
     def initH(self,miniBatch):
-        batchSize = miniBatch.shape[1]
-        totalGradients = self.getGradients(miniBatch,batchSize)
+        totalGradients = self.getGradients(miniBatch)
         for i in xrange(len(totalGradients)):
             self.h[i] += totalGradients[i]*totalGradients[i]
 
@@ -60,11 +60,14 @@ class AEVB:
         b1,b2,b3,b4,b5 = T.dcols("b1","b2","b3","b4","b5")
 
         #Set up the equations for encoding
-        #Something here is wrong, W3 gradient is fully zero
-        h = T.tanh(T.dot(W3,x) + b3)
+        if self.continuous:
+            h = T.nnet.softplus(T.dot(W3,x) + b3)
+        else:   
+            h = T.tanh(T.dot(W3,x) + b3)
 
         mu = T.dot(W4,h) + b4
-        sigma = T.sqrt(T.exp(T.dot(W5,h) + b5))
+        # logsigma = 0.5*(T.dot(W5,h) + b5)
+        sigma = T.exp(0.5*(T.dot(W5,h) + b5))
 
         #Find the hidden variable z
         z = mu + sigma*eps
@@ -72,18 +75,16 @@ class AEVB:
         #Set up the equation for decoding
         y = T.nnet.sigmoid(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)
 
-        # y = th.printing.Print('value of y:')(y)
-
         #Set up likelihood
         if self.continuous:
-            logpxz = T.sum(-0.5 * (self.dimZ * np.log(2*np.pi) + self.logdetcov) - 0.5*T.dot(T.dot((x-y).T,self.invcov),(x - y)))
+            logpxz = T.sum(-(0.5 * np.log(np.pi) + T.log(sigma)) - 0.5 * ((x - y) / sigma))
         else:
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
-        #Set up q (??) 
+        #Set up q 
         logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
 
-        #Choose prior
+        #Compute prior
         logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
 
         #Define lowerbound
@@ -92,21 +93,39 @@ class AEVB:
         #Compute all the gradients
         derivatives = T.grad(logp,[W1,W2,W3,W4,W5,b1,b2,b3,b4,b5])
 
-		#Add the lowerbound so we can keep track of results
+        #Add the lowerbound so we can keep track of results
         derivatives.append(logp)
 
         self.gradientfunction = th.function([W1,W2,W3,W4,W5,b1,b2,b3,b4,b5,x,eps], derivatives, on_unused_input='ignore')
 
-    def iterate(self, miniBatch, N):
-        """Compute the gradients for one miniBatch and return the updated parameters"""
-        batchSize = miniBatch.shape[1]
-        totalGradients = self.getGradients(miniBatch,batchSize)
-        self.updateParams(totalGradients,batchSize,N)
+    def iterate(self, data):
+        """Compute the gradients and update parameters"""
+        [N,dimX] = data.shape
+        batches = np.linspace(0,N,N/self.batch_size+1)
+       
+	for i in xrange(0,len(batches)-2):
+	    miniBatch = data[batches[i]:batches[i+1]]
+            totalGradients = self.getGradients(miniBatch.T)
+            self.updateParams(totalGradients,N)
 
-    def getGradients(self,miniBatch,batchSize):
+    def getLowerBound(self,data):
+        lowerbound = 0
+        [N,dimX] = data.shape
+        batches = np.linspace(0,N,N/self.batch_size+1)
+
+	for i in xrange(0,len(batches)-2):
+            e = np.random.normal(0,1,[self.dimZ,self.batch_size])
+	    miniBatch = data[batches[i]:batches[i+1]]
+            gradients = self.gradientfunction(*(self.params),x=miniBatch.T,eps=e)
+            lowerbound += gradients[10]
+
+        return lowerbound/N
+
+
+    def getGradients(self,miniBatch):
         totalGradients = [0] * 10
         for l in xrange(self.L):
-            e = np.random.normal(0,1,[self.dimZ,batchSize])
+            e = np.random.normal(0,1,[self.dimZ,self.batch_size])
             gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
             self.lowerbound += gradients[10]
 
@@ -119,11 +138,11 @@ class AEVB:
 
         return totalGradients
 
-    def updateParams(self,totalGradients,batchSize,N):
+    def updateParams(self,totalGradients,N):
         for i in xrange(len(self.params)):
             self.h[i] += totalGradients[i]*totalGradients[i]
-            prior = self.params[i]*(i<5)
+            prior = 0.5*self.params[i]*(i<5)
 
             #Include adagrad, include prior for weights
-            self.params[i] = self.params[i] + (self.learning_rate/np.sqrt(self.h[i])) * (totalGradients[i] - prior*(batchSize/N))
+            self.params[i] = self.params[i] + (self.learning_rate/np.sqrt(self.h[i])) * (totalGradients[i] - prior*(self.batch_size/N))
 

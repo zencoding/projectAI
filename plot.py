@@ -13,14 +13,14 @@ def plot(params, numPixels):
 	
 	size_x,size_y = numPixels
 
-	gridSize = 8
-	gridValues = np.linspace(0.1,1,gridSize)
+	gridSize = 10
+	gridValues = np.linspace(0.01,0.99,gridSize)
 	gs = gridspec.GridSpec(gridSize, gridSize)
 
 	fig = plt.figure()
 	for i in xrange(gridSize):
 		for j in xrange(gridSize):
-			z = np.matrix([sp.invgauss.cdf(gridValues[i],1),sp.invgauss.cdf(gridValues[j],1)]).T
+			z = np.array([sp.norm.ppf(gridValues[i]),sp.norm.ppf(gridValues[j])])
 			y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
 			ax = fig.add_subplot(gs[i,j])
 			ax.imshow(y.reshape((size_x,size_y)), interpolation='nearest', cmap='Greys')
@@ -33,12 +33,13 @@ def plot(params, numPixels):
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-d", "--data", help="Specify dataset", default = 'mnist', type = str.lower, choices = ['mnist', 'freyfaces'])
+parser.add_argument("-n", "--name", help="Specify name of parameters")
 
 args = parser.parse_args()
 
+params = np.load(args.name)
+
 if args.data == "freyfaces":
-	params = np.load("ff.npy")
 	plot(params,(28,20))
 if args.data == "mnist":
-	params = np.load("mnist.npy")
 	plot(params,(28,28))

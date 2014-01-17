@@ -15,7 +15,7 @@ print 'loading data'
 
 print 'creating h from saved params'
 
-params = np.load('params_4_logreg_dim20.npy')
+params = np.load('params.npy')
 
 hidden = lambda x: np.tanh(x.dot(params[2].T) + params[7].T)
 h_train = hidden(x_train)
