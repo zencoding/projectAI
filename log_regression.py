@@ -7,23 +7,19 @@ Otto Fabius - 5619858
 import numpy as np
 
 def logreg_gradients(x,t,w,b):
-    print w.shape, x.shape, b.shape
     logq = w.dot(x) + b
     
-        
     p = np.exp(logq - np.log(np.sum(np.exp(logq))))
     
     deltab = -p
     deltab[t] = 1-p[t]
     
-    deltaw = np.outer(x,deltab)
+    deltaw = np.outer(x,deltab).T
     
     return (deltaw,deltab)
 
 def sgd_iter(x_train, t_train, w, b):
-
-    batchSize, dimH = x_train.shape
-    learningrate = 0.001*np.sqrt(batchSize)
+    learningrate = 0.001
     
     deltaw,deltab = logreg_gradients(x_train,t_train,w,b)
     w += learningrate * deltaw
@@ -32,7 +28,7 @@ def sgd_iter(x_train, t_train, w, b):
     return (w,b)
 
 def check_correct(x,t,w,b):
-    logq = w.T.dot(x) + b
+    logq = w.dot(x) + b
     p = np.exp(logq - np.log(np.sum(np.exp(logq))))
     
     return (np.argmax(p) == t)
