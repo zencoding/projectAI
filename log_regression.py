@@ -14,7 +14,7 @@ def logreg_gradients(x,t,w,b):
     deltab = -p
     deltab[t] = 1-p[t]
     
-    deltaw = np.outer(x,deltab).T
+    deltaw = np.outer(deltab,x)
     
     return (deltaw,deltab)
 
@@ -38,4 +38,4 @@ def calculate_percentage(X,T,w,b):
     for i in xrange(X.shape[0]):
 	    num_correct += check_correct(X[i],T[i],w,b)
 
-    return num_correct*100./X.shape[0]
+    return num_correct*100/X.shape[0]
