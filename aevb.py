@@ -59,10 +59,10 @@ class AEVB:
         #Create biases as cols so they can be broadcasted for minibatches
         b1,b2,b3,b4,b5 = T.dcols("b1","b2","b3","b4","b5")
 
-                if self.continuous:
-                    h = T.nnet.softplus(T.dot(W3,x) + b3)
+        if self.continuous:
+            h = T.nnet.softplus(T.dot(W3,x) + b3)
         else:   
-                    h = T.tanh(T.dot(W3,x) + b3)
+            h = T.tanh(T.dot(W3,x) + b3)
 
         mu = T.dot(W4,h) + b4
         # logsigma = 0.5*(T.dot(W5,h) + b5)
