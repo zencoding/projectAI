@@ -13,6 +13,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--params", help="Specify param file", default = False)
 parser.add_argument("-s", "--save", help="Specify file to save params", default = False)
+parser.add_argument("-d","--double", help="Train on hidden layer of previously trained AE", default = False)
 
 args = parser.parse_args()
 
@@ -20,14 +21,21 @@ print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 data = np.concatenate((x_train,x_valid))
 
-[N,dimX] = data.shape
+if args.double:
+    print 'cumputing hidden layer to train new AE on'
+    prev_params = np.load(args.double)
+    data = np.tanh(data.dot(prev_params[2].T) + prev_params[7].T)
+    x_test = np.tanh(x_test.dot(prev_params[2].T) + prev_params[7].T)
+
+dimZ = 20
 HU_decoder = 500
 HU_encoder = HU_decoder
-dimZ = 20
+
 batch_size = 100
 L = 1
 learning_rate = 0.01
 
+[N,dimX] = data.shape
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 
 print "Creating Theano functions"
