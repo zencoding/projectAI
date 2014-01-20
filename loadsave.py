@@ -9,8 +9,8 @@ def load(name):
 	return (params,h,lowerbound,testlowerbound)
 
 def save(name,params,h,lowerbound,testlowerbound):
-		np.save(name,encoder.params)	
-		np.save('h' + name,encoder.h)
+		np.save(name,params)	
+		np.save('h' + name,h)
 		np.save('lowerbound' + name,lowerbound)
 		np.save('testlowerbound' + name,testlowerbound)
 		
