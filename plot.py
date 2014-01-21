@@ -10,7 +10,7 @@ def plot(params, numPixels):
 
     b1 = params[5]
     b2 = params[6]
-    
+
     size_x,size_y = numPixels
 
     gridSize = 10
@@ -20,7 +20,7 @@ def plot(params, numPixels):
     fig = plt.figure()
     for i in xrange(gridSize):
         for j in xrange(gridSize):
-            z = np.array([sp.norm.ppf(gridValues[i]),sp.norm.ppf(gridValues[j])])
+            z = np.matrix([sp.norm.ppf(gridValues[i]),sp.norm.ppf(gridValues[j])]).T
             y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
             ax = fig.add_subplot(gs[i,j])
             ax.imshow(y.reshape((size_x,size_y)), interpolation='nearest', cmap='Greys')
@@ -28,6 +28,7 @@ def plot(params, numPixels):
 
     fig.patch.set_facecolor('white')
     plt.savefig('manifold.png')
+    plt.close()
 
 
 parser = argparse.ArgumentParser()
