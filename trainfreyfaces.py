@@ -32,7 +32,7 @@ batch_size = 131
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 encoder.continuous = True
 
-encoder.data_sigma = np.std(data,0).T
+encoder.data_sigma = np.std(data,0,keepdims=True).T
 
 cov = np.cov(data.T)
 invcov = np.linalg.inv(cov)
@@ -45,26 +45,26 @@ encoder.createGradientFunctions()
 
 print "Initializing weights and biases"
 if args.params:
-	print "Loading params from: {0}".format(args.params)
-	encoder.params = np.load(args.params)
-	encoder.h = np.load('h'+args.params)
-	lowerbound = np.load('lowerbound'+args.params)
+    print "Loading params from: {0}".format(args.params)
+    encoder.params = np.load(args.params)
+    encoder.h = np.load('h'+args.params)
+    lowerbound = np.load('lowerbound'+args.params)
 else:
-	encoder.initParams()
-	for i in xrange(0,14):
-		encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
-	lowerbound = []
+    encoder.initParams()
+    for i in xrange(0,14):
+        encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
+    lowerbound = []
 
 print "Iterating"
 
 for j in xrange(2000):
-	print 'Iteration:', j
-	encoder.lowerbound = 0
-	encoder.iterate(data)
-	print encoder.lowerbound/N
-	lowerbound = np.append(lowerbound,encoder.lowerbound/N)
-	if args.save:
-		print "Saving params"
-		np.save(args.save,encoder.params)	
-		np.save('h' + args.save,encoder.h)
-		np.save('lowerbound' + args.save,lowerbound)
+    print 'Iteration:', j
+    encoder.lowerbound = 0
+    encoder.iterate(data)
+    print encoder.lowerbound/N
+    lowerbound = np.append(lowerbound,encoder.lowerbound/N)
+    if args.save:
+        print "Saving params"
+        np.save(args.save,encoder.params)   
+        np.save('h' + args.save,encoder.h)
+        np.save('lowerbound' + args.save,lowerbound)

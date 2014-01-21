@@ -1,10 +1,10 @@
 import gzip, cPickle
 
 def load_mnist():
-	f = gzip.open('mnist.pkl.gz', 'rb')
-	data = cPickle.load(f)
-	f.close()
-	return data
+    f = gzip.open('mnist.pkl.gz', 'rb')
+    data = cPickle.load(f)
+    f.close()
+    return data
 
 
 def load_cifar():
@@ -16,7 +16,7 @@ def load_cifar():
 
 
 def load_ff():
-	f = open('freyfaces.pkl','rb')
-	data = cPickle.load(f)
-	f.close()
-	return data
+    f = open('freyfaces.pkl','rb')
+    data = cPickle.load(f)
+    f.close()
+    return data

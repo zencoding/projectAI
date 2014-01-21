@@ -80,6 +80,7 @@ class AEVB:
         else:
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
+
         #Set up q 
         logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
 
@@ -143,6 +144,4 @@ class AEVB:
             prior = 0.5*self.params[i]*(i<5)
 
             #Include adagrad, include prior for weights
-            
             self.params[i] = self.params[i] + (self.learning_rate)/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(self.batch_size/N))
-

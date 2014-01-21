@@ -10,6 +10,10 @@ from loadsave import *
 import numpy as np
 import argparse
 
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import scipy.stats as sp
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--params", help="Specify param file", default = False)
 parser.add_argument("-s", "--save", help="Specify file to save params", default = False)
@@ -27,7 +31,7 @@ HU_encoder = HU_decoder
 
 batch_size = 100
 L = 1
-learning_rate = 0.01
+learning_rate = 0.1
 
 
 if args.double:
@@ -60,7 +64,6 @@ else:
     lowerbound = np.array([])
     testlowerbound = np.array([])
 
-
 for j in xrange(2000):
     encoder.lowerbound = 0
     print 'Iteration:', j
@@ -68,6 +71,35 @@ for j in xrange(2000):
     print encoder.lowerbound/N
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
     testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
+
+    if j % 5 == 0:
+        print "creating manifold"
+        gridSize = 20
+        gridValues = np.linspace(0.01,0.99,gridSize)
+        gs = gridspec.GridSpec(gridSize, gridSize)
+
+        fig = plt.figure()
+        W1 = encoder.params[0]
+        W2 = encoder.params[1]
+
+        b1 = encoder.params[5]
+        b2 = encoder.params[6]
+        for a in xrange(gridSize):
+            for b in xrange(gridSize):
+                z = np.matrix([sp.norm.ppf(gridValues[a]),sp.norm.ppf(gridValues[b])]).T
+                y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
+                ax = fig.add_subplot(gs[a,b])
+                ax.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
+                plt.axis('off')
+
+        fig.patch.set_facecolor('white')
+        plt.savefig('manifolds/manifold'+str(j)+'.png')
+        plt.close()
+        
+    if j % 10 == 0:
+        print "Saving test lowerbound"
+        testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
+
     if args.save:
         print "Saving params"
         save(args.save,encoder.params,encoder.h,lowerbound,testlowerbound)
