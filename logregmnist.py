@@ -12,7 +12,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--save", help="Specify file to save results", default = False)
-parser.add_argument("-p", "--params", help="Specify param file", default = False)
+parser.add_argument("-p", "--params", help="Specify param file", default = True)
+parser.add_argument("-d", "--double", help = "On Double AE?", default = False)
 
 args = parser.parse_args()
 
@@ -30,6 +31,17 @@ h_train = hidden(x_train)
 h_test = hidden(x_test)
 h_valid = hidden(x_valid)
 
+print args.double
+print h_train.shape
+
+if args.double:
+    print 'calculating output of 2nd hidden layer'
+    params = np.load(args.double)
+    h_train = hidden((h_train+1)/2)
+    h_test = hidden((h_test+1)/2)
+    h_valid = hidden((h_valid+1)/2)
+
+print h_train.shape
 
 (N,dimh) = h_train.shape
 
