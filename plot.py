@@ -24,7 +24,7 @@ def plot(params, num_pixels):
     plt.savefig('manifold.png', bbox_inches='tight')
     plt.close()
 
-    def plot_accuracy(filename, title):
+def plot_accuracy(filename, title):
     acc_train = np.load(filename + '_train.npy')    
     acc_val = np.load(filename + '_val.npy')
     acc_test = np.load(filename + '_test.npy')
@@ -36,6 +36,7 @@ def plot(params, num_pixels):
     plt.ylabel('Accuracy')
     plt.legend( ('Train Set', 'Validation Set', 'Test Set') )
     plt.savefig(title + '.png')
+    plt.close()
 
 
 parser = argparse.ArgumentParser()
