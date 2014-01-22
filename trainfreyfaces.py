@@ -32,14 +32,6 @@ batch_size = 131
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 encoder.continuous = True
 
-encoder.data_sigma = np.std(data,0,keepdims=True).T
-
-cov = np.cov(data.T)
-invcov = np.linalg.inv(cov)
-encoder.invcov = invcov
-(sign,logdetcov) = np.linalg.slogdet(cov)
-encoder.logdetcov = sign*logdetcov
-
 print "Creating Theano functions"
 encoder.createGradientFunctions()
 
