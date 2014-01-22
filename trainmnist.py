@@ -25,8 +25,8 @@ print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 data = np.concatenate((x_train,x_valid))
 
-dimZ = 100
-HU_decoder = 500
+dimZ = 20
+HU_decoder = 200
 HU_encoder = HU_decoder
 
 batch_size = 100
@@ -37,18 +37,18 @@ learning_rate = 0.1
 if args.double:
     print 'computing hidden layer to train new AE on'
     prev_params = np.load(args.double)
-    #data = (np.tanh(data.dot(prev_params[2].T) + prev_params[7].T) + 1) /2
-    #x_test = (np.tanh(x_test.dot(prev_params[2].T) + prev_params[7].T) +1) /2
-    data = 1/(1+(np.exp(data.dot(prev_params[2].T) + prev_params[7].T)))
-    x_test = 1/(1+(np.exp(x_test.dot(prev_params[2].T) + prev_params[7].T)))
+    data = (np.tanh(data.dot(prev_params[2].T) + prev_params[7].T) + 1) /2
+    x_test = (np.tanh(x_test.dot(prev_params[2].T) + prev_params[7].T) +1) /2
+    #data = 1/(1+(np.exp(data.dot(prev_params[2].T) + prev_params[7].T)))
+    #x_test = 1/(1+(np.exp(x_test.dot(prev_params[2].T) + prev_params[7].T)))
 
 [N,dimX] = data.shape
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 
 
-if args.double:
-    encoder.continuous = True
-    encoder.data_sigma = np.std(data,0, keepdims=True).T
+#if args.double:
+#    encoder.continuous = True
+#    encoder.data_sigma = np.std(data,0, keepdims=True).T
 
 print "Creating Theano functions"
 encoder.createGradientFunctions()
@@ -73,30 +73,6 @@ for j in xrange(2000):
     testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
 
     if j % 5 == 0:
-        print "creating manifold"
-        gridSize = 20
-        gridValues = np.linspace(0.01,0.99,gridSize)
-        gs = gridspec.GridSpec(gridSize, gridSize)
-
-        fig = plt.figure()
-        W1 = encoder.params[0]
-        W2 = encoder.params[1]
-
-        b1 = encoder.params[5]
-        b2 = encoder.params[6]
-        for a in xrange(gridSize):
-            for b in xrange(gridSize):
-                z = np.matrix([sp.norm.ppf(gridValues[a]),sp.norm.ppf(gridValues[b])]).T
-                y = 1 / (1 + np.exp(-(W2.dot(np.tanh(W1.dot(z) + b1)) + b2)))
-                ax = fig.add_subplot(gs[a,b])
-                ax.imshow(y.reshape((28,28)), interpolation='nearest', cmap='Greys')
-                plt.axis('off')
-
-        fig.patch.set_facecolor('white')
-        plt.savefig('manifolds/manifold'+str(j)+'.png')
-        plt.close()
-        
-    if j % 10 == 0:
         print "Saving test lowerbound"
         testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
 

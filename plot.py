@@ -29,6 +29,19 @@ def plot(params, numPixels):
     fig.patch.set_facecolor('white')
     plt.savefig('manifold.png')
 
+    def plot_accuracy(filename, title):
+    acc_train = np.load(filename + '_train.npy')    
+    acc_val = np.load(filename + '_val.npy')
+    acc_test = np.load(filename + '_test.npy')
+
+    plt.plot(acc_train, 'k-', acc_val, 'b-', 49, acc_test, 'rx')
+    plt.axis([0, 50, 90, 100])
+    plt.title(title)
+    plt.xlabel('Iterations (= 50.000 datapoints)')
+    plt.ylabel('Accuracy')
+    plt.legend( ('Train Set', 'Validation Set', 'Test Set') )
+    plt.savefig(title + '.png')
+
 
 parser = argparse.ArgumentParser()
 
