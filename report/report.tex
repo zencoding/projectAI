@@ -15,9 +15,9 @@
 	}
 \maketitle
 
-\section*{Introduction}
-background literature \\ 
-
+\begin{abstract}
+In this paper, we use the recently developed unsupervised learning method of Auto-Encoding Variational Bayes (Kingma and Welling, 2014) on various datasets. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We apply the learned auto-encoders for compression, classification, (.......). Several results from Kingma and Welling (2014) were reproduced, as well as ........
+\end{abstract}
 
 \section*{AEVB}
 
@@ -33,24 +33,43 @@ Where $P(X|Z)$ and $P(Z|X)$ are parameterized by $\theta$.
 \\
 
 Knowing the probability distributions $P(X|Z)$ and $P(Z|X)$, i.e. learning $\theta$, can sometimes provide information on some natural process (if one is interested in the values of the parameters, for example). But knowing the distribution $P(Z|X)$ also allows us to infer $\mathbf{Z}$ from $\mathbf{X}$ to reduce the dimensionality of (encode) our data and find structure in the data. Furthermore, introducing a prior $P(Z)$ allows for computing the marginal probability $P(X)$ to generate data for applications such as image inpainting, denoising and super-resolution.
-We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int \frac{P(Z)}{P(X|Z)}dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods.
+We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int \frac{P(Z)}{P(X|Z)}dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods. (possible e.g. variational linear regression, Bishop p. 486)
 
 
 
 
 
-
-In the class of problems we are interested in, the following conditions apply:
-\begin{itemize}
-\item The posterior distribution $P(Z|X)$ is intractable. 
-\item the probability density functions of the prior $P(Z)$ and the likelihood $P(X|Z)$, respectively, are differentiable w.r.t. $\mathbf{Z}$ and $\theta$. 
-\end{itemize}
+%In the class of problems we are interested in, the following conditions apply:
+%\begin{itemize}
+%\item The posterior distribution $P(Z|X)$ is intractable. 
+%\item the probability density functions of the prior $P(Z)$ and the likelihood $P(X|Z)$, respectively, are differentiable w.r.t. $\mathbf{Z}$ and $\theta$. 
+%\end{itemize}
 
 \subsection*{Sampling to obtain gradients}
 
+Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, Kingma and Welling (2014) derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
 
+\begin{align}
+\mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
+\end{align}
+
+Here, $z$ is sampled $l$ times from $q_{\phi}(z|x)$ for each datapoint $x^{(i)}$. Because $z$ therefore depends on parameters $\theta$, differentiating $\mathcal{L}$ w.r.t. $\phi$ will lead to a gradient which is influenced by the current parameters $\phi$. 
+As a solution to this problem, Kingma and Welling (2014) reparameterize the samples of $z$ from $q(z|x)$ as
+\begin{align}
+z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim p(\mathbf{\epsilon}) 
+\end{align} 
+
+Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection*{Modelling the conditional distributions}
+
+For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to Kingma and Welling (2014). These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
+
+IETS MEER OVER NEURAL NETWORKS OID? IIG REFS...
+
+This way, once we have trained the two networks, we have an \textit{encoder} that maps $\mathbf{x}$ to its hidden variables $\mathbf{z}$, and a (generative) \textit{decoder} that maps any combination of hidden variables to a (new) datapoint $\mathbf{x}$. This has a strong similarity to auto-encoders (refs??). 
+
+The encoder allows us to compress and/or organize data. Inpainting, denoising and super-resolution (up to the resolution on which is trained) can be realized by generating the hidden representation from the datapoint with the encoder, and creating the desired output with the decoder.
 
 \section*{Experiments}
 
