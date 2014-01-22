@@ -26,7 +26,7 @@ class AEVB:
         self.continuous = False
 
     def initParams(self):
-                #initialize theta for decoder
+        #initialize theta for decoder
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,self.dimZ))
         b1 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,1))
 
@@ -65,11 +65,13 @@ class AEVB:
             h = T.tanh(T.dot(W3,x) + b3)
 
         mu = T.dot(W4,h) + b4
-        # logsigma = 0.5*(T.dot(W5,h) + b5)
         sigma = T.exp(0.5*(T.dot(W5,h) + b5))
 
         #Find the hidden variable z
         z = mu + sigma*eps
+
+        # log_sigma_sq = T.dot(W5,h) + b5
+        # z = mu + T.exp(0.5*(log_sigma_sq + 2*T.log(eps)))
 
         #Set up the equation for decoding
         y = T.nnet.sigmoid(T.dot(W2,T.tanh(T.dot(W1,z) + b1)) + b2)
@@ -79,7 +81,6 @@ class AEVB:
             logpxz = T.sum(-(0.5 * np.log(np.pi) + T.log(self.data_sigma)) - 0.5 * ((x - y) / self.data_sigma)**2)
         else:
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
-
 
         #Set up q 
         logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
