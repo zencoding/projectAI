@@ -19,15 +19,15 @@
 In this paper, we use the recently developed unsupervised learning method of Auto-Encoding Variational Bayes (Kingma and Welling, 2014) on various datasets. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We apply the learned auto-encoders for compression, classification, (.......). Several results from Kingma and Welling (2014) were reproduced, as well as ........
 \end{abstract}
 
-\section*{AEVB}
+\section{AEVB}
 
 \subsection*{Problem class}
 
 The problem class associated with AEVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the posterior probability over $\mathbf{X}$ by reformulating Bayes' Rule:
 
-\begin{align*}
+\begin{align}
 P(X) = \frac{P(X|Z)P(Z)}{P(Z|X)}
-\end{align*}
+\end{align}
 
 Where $P(X|Z)$ and $P(Z|X)$ are parameterized by $\theta$.
 \\
@@ -45,7 +45,7 @@ We would like to learn $\theta$ by gradient ascent/descent by differentiating so
 %\item the probability density functions of the prior $P(Z)$ and the likelihood $P(X|Z)$, respectively, are differentiable w.r.t. $\mathbf{Z}$ and $\theta$. 
 %\end{itemize}
 
-\subsection*{Sampling to obtain gradients}
+\subsection{Sampling to obtain gradients}
 
 Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, Kingma and Welling (2014) derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
 
@@ -61,7 +61,7 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 
 Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
-\subsection*{Modelling the conditional distributions}
+\subsection{Modelling the conditional distributions}
 
 For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to Kingma and Welling (2014). These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
 
@@ -72,17 +72,35 @@ This way, once we have trained the two networks, we have an \textit{encoder} tha
 
 The encoder allows us to compress and/or organize data. Inpainting, denoising and super-resolution (up to the resolution on which is trained) can be realized by generating the hidden representation from the datapoint with the encoder, and creating the desired output with the decoder.
 
-\section*{Experiments}
+\section{Experiments}
 
-Describe algorithms,datasets, param choices, and motivate.
+In this section, we outline our experiments and present our results. We will present and discuss our results immediately after the description of each experiment so it is clear to the reader which results and conclusion belong to which experiment.
 
-\section*{Results}
+\subsection{Reproducing results}
 
-Shiny pictures with captions
+Firstly, we performed some experiments to reproduce the results of (ref...). In their paper, an Auto-Encoder was trained on both data consisting of distinct classes (MNIST handwritten digits) and continuous data (Frey Faces).
 
-\section*{Discussion}
+\subsubsection{MNIST}
 
-what worked well/what didn't? Why? Possible improvements/further directions for research?
+\subsubsection{Frey Faces}
+
+\subsection{Classification}
+
+In the remainder of the experiments, we will focus on one useful application of AEVB classification. In particular, we will examine the performance of logistic regression on various representations of the same dataset. For logistic regression, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we hop to improve the results of classification (supervised learning) with AEVB (unsupervised learning).
+
+\subsubsection{Classifying MNIST on features}
+
+compare baseline log regression and on RBM, AE, Double AE
+
+\subsubsection{Classifying Chinese characters}
+
+log regression op pixels, single AE features, double AE features (?)
+
+\subsubsection{Classification on small datasets}
+
+In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of features calculated from a trained Auto-Encoder for improving the results of logistic regression on small subsets of MNIST (and chinese characters?). 
+
+MNIST - resultaten al op docs
 
 \section*{Conclusion}
 
