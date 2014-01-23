@@ -42,3 +42,7 @@ nosetests.xml
 
 *.tar.gz
 *.gnt
+*.log
+report.pdf
+parameters
+output*
