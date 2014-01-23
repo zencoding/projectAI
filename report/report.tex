@@ -65,6 +65,7 @@ Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equatio
 
 For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to Kingma and Welling (2014). These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
 
+IETS OVER BINARY/CONTINUOUS OUTPUT \\
 IETS MEER OVER NEURAL NETWORKS OID? IIG REFS...
 
 This way, once we have trained the two networks, we have an \textit{encoder} that maps $\mathbf{x}$ to its hidden variables $\mathbf{z}$, and a (generative) \textit{decoder} that maps any combination of hidden variables to a (new) datapoint $\mathbf{x}$. This has a strong similarity to auto-encoders (refs??). 

@@ -34,7 +34,7 @@ if args.baseline:
     hidden = lambda x: x
 else:
     print 'converted'
-    hidden = lambda x: np.tanh(x.dot(params[2].T) + params[7].T)
+    hidden = lambda x: np.tanh(x.dot(params[0].T) + params[5].T)
 h_train = hidden(x_train)
 h_test = hidden(x_test)
 h_valid = hidden(x_valid)

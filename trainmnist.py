@@ -37,10 +37,8 @@ learning_rate = 0.1
 if args.double:
     print 'computing hidden layer to train new AE on'
     prev_params = np.load(args.double)
-    data = (np.tanh(data.dot(prev_params[2].T) + prev_params[7].T) + 1) /2
-    x_test = (np.tanh(x_test.dot(prev_params[2].T) + prev_params[7].T) +1) /2
-    #data = 1/(1+(np.exp(data.dot(prev_params[2].T) + prev_params[7].T)))
-    #x_test = 1/(1+(np.exp(x_test.dot(prev_params[2].T) + prev_params[7].T)))
+    data = (np.tanh(data.dot(prev_params[0].T) + prev_params[5].T) + 1) /2
+    x_test = (np.tanh(x_test.dot(prev_params[0].T) + prev_params[5].T) +1) /2
 
 [N,dimX] = data.shape
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)

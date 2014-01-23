@@ -65,20 +65,15 @@ for i in xrange(iterations):
 		w,b = sgd_iter(h_train[j],t_train[j],w,b)
 	
 	valid_correct = calculate_percentage(h_valid,t_valid,w,b)	
-	#train_correct = calculate_percentage(h_train,t_train,w,b)
 	print 'valid correct = ', valid_correct
-	#print 'train correct = ', train_correct
 
 	if args.save:
 	    print "Saving results"
-	    valid.append(valid_correct)
-	    #train.append(train_correct)
-	    #np.save(args.save + '_train',train)	
+	    valid.append(valid_correct)	
 	    np.save(args.save + '_val',valid)
 
 test_correct = calculate_percentage(h_test,t_test,w,b)
 
-#print 'percentage of training set correct: ', train_correct
 print 'percentage of test set correct: ', test_correct
 if args.save:
 	np.save(args.save + '_test', test_correct)
