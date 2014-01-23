@@ -9,7 +9,7 @@ import theano as th
 import theano.tensor as T
 
 class AEVB:
-	"""Auto-encoding variational Bayes (AEVB).
+    """Auto-encoding variational Bayes (AEVB).
 
     An auto-encoder with variational Bayes inference.
 
@@ -59,21 +59,14 @@ class AEVB:
     Examples
     --------
 
-    >>> import numpy as np
-    >>> import scikit-aevb.py
-    >>> X = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]])
-    >>> model = AEVB(n_components=2)
-    >>> model.fit(X)
-    AEVB(n_components_decoder = 200, n_components_encoder = 200, n_hidden_variables = 20, learning_rate=0.01,
-    			batch_size = 100, n_iter = 10, sampling_rounds = 1, continuous = False, verbose = False, random_state = None)
-
-    References
     ----------
+    References
 
-    [1] 
+    [1] Kingma D.P., Welling M. Stochastic Gradient VB and the Variational Auto-Encoder
+    Arxiv, preprint. http://arxiv.org/pdf/1312.6114v6.pdf
     """
-    def __init__(self, n_components_decoder = 200, n_components_encoder = 200, n_hidden_variables = 20, learning_rate=0.01,
-    			batch_size = 100, n_iter = 10, sampling_rounds = 1, continuous = False, verbose = False, random_state = None):
+    
+    def __init__(self, n_components_decoder = 200, n_components_encoder = 200, n_hidden_variables = 20, learning_rate=0.01,batch_size = 100, n_iter = 10, sampling_rounds = 1, continuous = False, verbose = False, random_state = None):
         self.n_components_decoder = n_components_decoder
         self.n_components_encoder= n_components_encoder
         self.n_hidden_variables = n_hidden_variables
@@ -87,30 +80,29 @@ class AEVB:
 
         self.continuous = continuous
 
-    def initParams(self):
+    def initParams(self,dimX):
+        """Create all weight and bias parameters in the right dimension"""
     	sigmaInit = 0.01
-        W1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
-        b1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,1))
+        W1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,dimX))
+        b1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,1))
 
-        W2 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
-        b2 = np.random.normal(0,self.sigmaInit,(self.dimZ,1))
+        W2 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
+        b2 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,1))
 
-        W3 = np.random.normal(0,self.sigmaInit,(self.dimZ,self.HU_encoder))
-        b3 = np.random.normal(0,self.sigmaInit,(self.dimZ,1))
+        W3 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
+        b3 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,1))
         
-        W4 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,self.dimZ))
-        b4 = np.random.normal(0,self.sigmaInit,(self.HU_decoder,1))
+        W4 = np.random.normal(0,self.sigmaInit,(self.n_components_decoder,self.n_hidden_variables))
+        b4 = np.random.normal(0,self.sigmaInit,(self.n_components_decoder,1))
 
-        W5 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
-        b5 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
+        W5 = np.random.normal(0,self.sigmaInit,(dimX,self.n_components_decoder))
+        b5 = np.random.normal(0,self.sigmaInit,(dimX,1))
 
         self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
         if self.continuous:
-            W6 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
-            b6 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
+            W6 = np.random.normal(0,self.sigmaInit,(dimX,self.n_components_decoder))
+            b6 = np.random.normal(0,self.sigmaInit,(dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
-
-
 
     def initH(self,miniBatch):
         self.h = [0.01] * len(self.params)
