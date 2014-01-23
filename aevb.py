@@ -127,7 +127,7 @@ class AEVB:
             gradients = self.gradientfunction(*(self.params),x=miniBatch.T,eps=e)
             lowerbound += gradients[10]
 
-            return lowerbound/N
+        return lowerbound/N
 
 
     def getGradients(self,miniBatch):

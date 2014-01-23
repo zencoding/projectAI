@@ -68,7 +68,6 @@ for j in xrange(2000):
     encoder.iterate(data)
     print encoder.lowerbound/N
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
-    testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
 
     if j % 5 == 0:
         print "Saving test lowerbound"

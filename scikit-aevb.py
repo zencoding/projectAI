@@ -9,22 +9,86 @@ import theano as th
 import theano.tensor as T
 
 class AEVB:
-    def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, batch_size, L=1, learning_rate=0.01):
-        self.HU_decoder = HU_decoder
-        self.HU_encoder = HU_encoder
+	"""Auto-encoding variational Bayes (AEVB).
 
-        self.dimX = dimX
-        self.dimZ = dimZ
-        self.L = L
+    An auto-encoder with variational Bayes inference.
+
+    Parameters
+    ----------
+    n_components_decoder : int, optional
+        Number of binary hidden units for decoder.
+
+    n_components_encoder : int, optional
+        Number of binary hidden units for encoder.
+
+    n_hidden_variables : int, optional
+    	The dimensionality of Z
+
+    learning_rate : float, optional
+        The learning rate for weight updates. It is *highly* recommended
+        to tune this hyper-parameter. Reasonable values are in the
+        10**[0., -3.] range.
+
+    batch_size : int, optional
+        Number of examples per minibatch.
+
+    n_iter : int, optional
+        Number of iterations/sweeps over the training dataset to perform
+        during training.
+
+    sampling_rounds : int, optional
+    	Number of sampling rounds done on the minibatch
+
+    continuous : boolean, optional
+    	Set what type of data the auto-encoder should model
+
+    verbose : int, optional
+        The verbosity level. The default, zero, means silent mode.
+
+    random_state : integer or numpy.RandomState, optional
+        A random number generator instance to define the state of the
+        random permutations generator. If an integer is given, it fixes the
+        seed. Defaults to the global numpy random number generator.
+
+    Attributes
+    ----------
+    `params` : list-like, list of weights and biases.
+
+  
+
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> import scikit-aevb.py
+    >>> X = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]])
+    >>> model = AEVB(n_components=2)
+    >>> model.fit(X)
+    AEVB(n_components_decoder = 200, n_components_encoder = 200, n_hidden_variables = 20, learning_rate=0.01,
+    			batch_size = 100, n_iter = 10, sampling_rounds = 1, continuous = False, verbose = False, random_state = None)
+
+    References
+    ----------
+
+    [1] 
+    """
+    def __init__(self, n_components_decoder = 200, n_components_encoder = 200, n_hidden_variables = 20, learning_rate=0.01,
+    			batch_size = 100, n_iter = 10, sampling_rounds = 1, continuous = False, verbose = False, random_state = None):
+        self.n_components_decoder = n_components_decoder
+        self.n_components_encoder= n_components_encoder
+        self.n_hidden_variables = n_hidden_variables
+
         self.learning_rate = learning_rate
         self.batch_size = batch_size
+        self.n_iter = n_iter
+        self.sampling_rounds = sampling_steps
+        self.verbose = verbose
+        self.random_state = random_state
 
-        self.sigmaInit = 0.01
-        self.lowerbound = 0
-
-        self.continuous = False
+        self.continuous = continuous
 
     def initParams(self):
+    	sigmaInit = 0.01
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
         b1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,1))
 

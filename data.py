@@ -20,3 +20,9 @@ def load_ff():
     data = cPickle.load(f)
     f.close()
     return data
+
+def load_chinese(file_id):
+    f = gzip.open('output4040/chinese'+str(file_id)+'0000.pkl.gz','rb')
+    data = cPickle.load(f)
+    f.close()
+    return data
