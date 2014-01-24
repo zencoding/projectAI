@@ -68,27 +68,31 @@ class AEVB:
             h_encoder = T.tanh(T.dot(W1,x) + b1)
 
         mu = T.dot(W2,h_encoder) + b2
-        sigma = T.exp(0.5*(T.dot(W3,h_encoder) + b3))
+        log_sigma = 0.5*(T.dot(W3,h_encoder) + b3)
 
         #Find the hidden variable z
-        z = mu + sigma*eps
+        z = mu + T.exp(log_sigma)*eps
 
         #Set up likelihood
-        h_decoder = T.tanh(T.dot(W4,z) + b4)
+        #Also use softplus for decoder continuous
+        if self.continuous:
+            h_decoder = T.nnet.softplus(T.dot(W4,z) + b4)
+        else:   
+            h_decoder = T.tanh(T.dot(W4,z) + b4)
 
         if self.continuous:
             decoder_mu = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
-            decoder_sigma = T.exp(0.5*(T.dot(W6,h_decoder) + b6))
-            logpxz = T.sum(-(0.5 * np.log(np.pi) + T.log(decoder_sigma)) - 0.5 * ((x - decoder_mu) / decoder_sigma)**2)
+            decoder_log_sigma = 0.5*(T.dot(W6,h_decoder) + b6)
+            logpxz = T.sum(-(0.5 * np.log(np.pi) + decoder_log_sigma) - 0.5 * ((x - decoder_mu) / T.exp(decoder_log_sigma))**2)
         else:
             y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
         #Set up q 
-        logqzx = T.sum(-(z - mu)**2/(2.*sigma**2) - 0.5 * T.log(2. * np.pi * sigma**2))
+        logqzx = T.sum(-0.5*((z - mu)/T.exp(log_sigma))**2 - (0.5 * np.log(2 * np.pi) + log_sigma))
 
         #Compute prior
-        logpz = T.sum(-(z**2)/2 - 0.5 * np.log(2 * np.pi))
+        logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
 
         #Define lowerbound
         logp = logpxz + logpz - logqzx
