@@ -19,9 +19,10 @@ def plot(params, num_pixels, continuous):
             z = np.matrix([sp.norm.ppf(gridValues[i]),sp.norm.ppf(gridValues[j])]).T
             if continuous:
                 h_decoder = np.log(1 + np.exp(np.dot(W4,z) + b4))
-                y = 1 / (1 + np.exp(-(np.dot(W5,h_decoder) + b5)))
+                y = 1 / (1 + np.exp(-(W5.dot(h_decoder) + b5)))
             else:
-                y = 1 / (1 + np.exp(-(W5.dot(np.tanh(W4.dot(z) + b4)) + b5)))
+                h_encoder = np.tanh(W4.dot(z) + b4)
+                y = 1 / (1 + np.exp(-(W5.dot(h_encoder) + b5)))
             grid[i*10+j].imshow(y.reshape((height,width)), interpolation='nearest', cmap='Greys')
             grid[i*10+j].set_axis_off()
 
