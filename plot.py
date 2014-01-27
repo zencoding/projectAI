@@ -10,7 +10,7 @@ def plot(params, num_pixels, continuous):
     height,width = num_pixels
 
     gridSize = 10
-    gridValues = np.linspace(0.01,0.99,gridSize)
+    gridValues = np.linspace(0.05,0.95,gridSize)
 
     fig = plt.figure()
     grid = ImageGrid(fig, 111, nrows_ncols = (gridSize, gridSize), axes_pad=0.)

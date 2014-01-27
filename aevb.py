@@ -64,25 +64,25 @@ class AEVB:
         else:   
             h_encoder = T.tanh(T.dot(W1,x) + b1)
 
-        mu = T.dot(W2,h_encoder) + b2
-        log_sigma = 0.5*(T.dot(W3,h_encoder) + b3)
+        mu_encoder = T.dot(W2,h_encoder) + b2
+        log_sigma_encoder = 0.5*(T.dot(W3,h_encoder) + b3)
 
         #Find the hidden variable z
-        z = mu + T.exp(log_sigma)*eps
+        z = mu_encoder + T.exp(log_sigma_encoder)*eps
 
         #Set up decoding layer
         if self.continuous:
             h_decoder = T.nnet.softplus(T.dot(W4,z) + b4)
-            decoder_mu = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
-            decoder_log_sigma = 0.5*(T.dot(W6,h_decoder) + b6)
-            logpxz = T.sum(-(0.5 * np.log(2 * np.pi) + decoder_log_sigma) - 0.5 * ((x - decoder_mu) / T.exp(decoder_log_sigma))**2)
+            mu_decoder = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
+            log_sigma_decoder = 0.5*(T.dot(W6,h_decoder) + b6)
+            logpxz = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_decoder) - 0.5 * ((x - mu_decoder) / T.exp(log_sigma_decoder))**2)
         else:
             h_decoder = T.tanh(T.dot(W4,z) + b4)
             y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
         #Set up q 
-        logqzx = T.sum(-0.5*((z - mu)/T.exp(log_sigma))**2 - (0.5 * np.log(2 * np.pi) + log_sigma))
+        logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
 
         #Compute prior
         logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
@@ -114,7 +114,7 @@ class AEVB:
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
             totalGradients = self.getGradients(miniBatch.T)
-            self.updateParams(totalGradients,N,miniBatch.shape[1])
+            self.updateParams(totalGradients,N,miniBatch.shape[0])
 
     def getLowerBound(self,data):
         lowerbound = 0
@@ -125,8 +125,8 @@ class AEVB:
 
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
-            e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
-            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch.T,eps=e)
+            e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[0]])
+            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch,eps=e)
 
         return lowerbound/N
 
@@ -138,7 +138,7 @@ class AEVB:
             gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
             self.lowerbound += gradients[-1]
 
-            for i in xrange(len(totalGradients)):
+            for i in xrange(len(self.params)):
                 if np.isnan(np.sum(gradients[i])):
                     print "The gradients contain nans, that cannot be right"
                     exit()
@@ -153,4 +153,4 @@ class AEVB:
             prior = 0.5*self.params[i]*(i<5)
 
             #Include adagrad, include prior for weights
-            self.params[i] = self.params[i] + (self.learning_rate)/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(batch_size/N))
+            self.params[i] = self.params[i] + self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(batch_size/N))

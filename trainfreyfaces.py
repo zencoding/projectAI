@@ -43,7 +43,7 @@ if args.params:
     lowerbound = np.load('lowerbound'+args.params)
 else:
     encoder.initParams()
-    for i in xrange(0,14):
+    for i in xrange(0,10):
         encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
     lowerbound = []
 
