@@ -49,12 +49,14 @@ else:
 
 print "Iterating"
 
-for j in xrange(2000):
-    print 'Iteration:', j
+iteration = 1
+while True:
+    print 'Iteration:', iteration
     encoder.lowerbound = 0
     encoder.iterate(data)
     print encoder.lowerbound/N
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
+    iteration += 1
     if args.save:
         print "Saving params"
         np.save(args.save,encoder.params)   

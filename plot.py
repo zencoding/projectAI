@@ -4,7 +4,7 @@ import numpy as np
 import scipy.stats as sp
 import argparse
 
-def plot(params, num_pixels):
+def plot(params, num_pixels, continuous):
     (W4,W5,b4,b5) = params
 
     height,width = num_pixels
@@ -17,7 +17,11 @@ def plot(params, num_pixels):
     for i in xrange(gridSize):
         for j in xrange(gridSize):
             z = np.matrix([sp.norm.ppf(gridValues[i]),sp.norm.ppf(gridValues[j])]).T
-            y = 1 / (1 + np.exp(-(W5.dot(np.tanh(W4.dot(z) + b4)) + b5)))
+            if continuous:
+                h_decoder = np.log(1 + np.exp(np.dot(W4,z) + b4))
+                y = 1 / (1 + np.exp(-(np.dot(W5,h_decoder) + b5)))
+            else:
+                y = 1 / (1 + np.exp(-(W5.dot(np.tanh(W4.dot(z) + b4)) + b5)))
             grid[i*10+j].imshow(y.reshape((height,width)), interpolation='nearest', cmap='Greys')
             grid[i*10+j].set_axis_off()
 
@@ -51,7 +55,7 @@ learned_params = np.load(args.name)
 
 if args.data == "freyfaces":
     inputparams = (learned_params[3],learned_params[4],learned_params[9],learned_params[10])
-    plot(inputparams,(28,20))
+    plot(inputparams,(28,20),True)
 if args.data == "mnist":
     inputparams = (learned_params[3],learned_params[4],learned_params[8],learned_params[9])
-    plot(inputparams,(28,28))
+    plot(inputparams,(28,28),False)

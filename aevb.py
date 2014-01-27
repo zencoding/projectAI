@@ -46,14 +46,11 @@ class AEVB:
             b6 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
 
-
-
     def initH(self,miniBatch):
         self.h = [0.01] * len(self.params)
         totalGradients = self.getGradients(miniBatch)
         for i in xrange(len(totalGradients)):
             self.h[i] += totalGradients[i]*totalGradients[i]
-
 
     def createGradientFunctions(self):
         #Create the Theano variables
@@ -73,18 +70,14 @@ class AEVB:
         #Find the hidden variable z
         z = mu + T.exp(log_sigma)*eps
 
-        #Set up likelihood
-        #Also use softplus for decoder continuous
+        #Set up decoding layer
         if self.continuous:
             h_decoder = T.nnet.softplus(T.dot(W4,z) + b4)
-        else:   
-            h_decoder = T.tanh(T.dot(W4,z) + b4)
-
-        if self.continuous:
             decoder_mu = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             decoder_log_sigma = 0.5*(T.dot(W6,h_decoder) + b6)
-            logpxz = T.sum(-(0.5 * np.log(np.pi) + decoder_log_sigma) - 0.5 * ((x - decoder_mu) / T.exp(decoder_log_sigma))**2)
+            logpxz = T.sum(-(0.5 * np.log(2 * np.pi) + decoder_log_sigma) - 0.5 * ((x - decoder_mu) / T.exp(decoder_log_sigma))**2)
         else:
+            h_decoder = T.tanh(T.dot(W4,z) + b4)
             y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
@@ -109,27 +102,31 @@ class AEVB:
         derivatives.append(logp)
 
         self.gradientfunction = th.function(gradvariables + [x,eps], derivatives, on_unused_input='ignore')
+        self.lowerboundfunction = th.function(gradvariables + [x,eps], logp, on_unused_input='ignore')
 
     def iterate(self, data):
         """Compute the gradients and update parameters"""
         [N,dimX] = data.shape
-        batches = np.linspace(0,N,N/self.batch_size+1)
+        batches = np.arange(0,N,self.batch_size)
+        if batches[-1] != N:
+            batches = np.append(batches,N)
 
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
             totalGradients = self.getGradients(miniBatch.T)
-            self.updateParams(totalGradients,N)
+            self.updateParams(totalGradients,N,miniBatch.shape[1])
 
     def getLowerBound(self,data):
         lowerbound = 0
         [N,dimX] = data.shape
-        batches = np.linspace(0,N,N/self.batch_size+1)
+        batches = np.arange(0,N,self.batch_size)
+        if batches[-1] != N:
+            batches = np.append(batches,N)
 
         for i in xrange(0,len(batches)-2):
-            e = np.random.normal(0,1,[self.dimZ,self.batch_size])
             miniBatch = data[batches[i]:batches[i+1]]
-            gradients = self.gradientfunction(*(self.params),x=miniBatch.T,eps=e)
-            lowerbound += gradients[10]
+            e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
+            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch.T,eps=e)
 
         return lowerbound/N
 
@@ -137,7 +134,7 @@ class AEVB:
     def getGradients(self,miniBatch):
         totalGradients = [0] * len(self.params)
         for l in xrange(self.L):
-            e = np.random.normal(0,1,[self.dimZ,self.batch_size])
+            e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
             gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
             self.lowerbound += gradients[-1]
 
@@ -150,10 +147,10 @@ class AEVB:
 
         return totalGradients
 
-    def updateParams(self,totalGradients,N):
+    def updateParams(self,totalGradients,N,batch_size):
         for i in xrange(len(self.params)):
             self.h[i] += totalGradients[i]*totalGradients[i]
             prior = 0.5*self.params[i]*(i<5)
 
             #Include adagrad, include prior for weights
-            self.params[i] = self.params[i] + (self.learning_rate)/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(self.batch_size/N))
+            self.params[i] = self.params[i] + (self.learning_rate)/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(batch_size/N))
