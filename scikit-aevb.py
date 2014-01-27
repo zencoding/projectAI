@@ -80,8 +80,8 @@ class AEVB:
 
         self.continuous = continuous
 
-    def initParams(self,dimX):
-        """Create all weight and bias parameters in the right dimension"""
+    def _initParams(self,dimX):
+        """Create all weight and bias parameters with the right dimensions"""
     	sigmaInit = 0.01
         W1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,dimX))
         b1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,1))
@@ -104,14 +104,14 @@ class AEVB:
             b6 = np.random.normal(0,self.sigmaInit,(dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
 
-    def initH(self,miniBatch):
+    def _initH(self,miniBatch):
         self.h = [0.01] * len(self.params)
         totalGradients = self.getGradients(miniBatch)
         for i in xrange(len(totalGradients)):
             self.h[i] += totalGradients[i]*totalGradients[i]
 
 
-    def createGradientFunctions(self):
+    def _createGradientFunctions(self):
         #Create the Theano variables
         W1,W2,W3,W4,W5,W6,x,eps = T.dmatrices("W1","W2","W3","W4","W5","W6","x","eps")
 
@@ -162,17 +162,7 @@ class AEVB:
 
         self.gradientfunction = th.function(gradvariables + [x,eps], derivatives, on_unused_input='ignore')
 
-    def iterate(self, data):
-        """Compute the gradients and update parameters"""
-        [N,dimX] = data.shape
-        batches = np.linspace(0,N,N/self.batch_size+1)
-
-        for i in xrange(0,len(batches)-2):
-            miniBatch = data[batches[i]:batches[i+1]]
-            totalGradients = self.getGradients(miniBatch.T)
-            self.updateParams(totalGradients,N)
-
-    def getLowerBound(self,data):
+    def _getLowerBound(self,data):
         lowerbound = 0
         [N,dimX] = data.shape
         batches = np.linspace(0,N,N/self.batch_size+1)
@@ -186,7 +176,7 @@ class AEVB:
             return lowerbound/N
 
 
-    def getGradients(self,miniBatch):
+    def _getGradients(self,miniBatch):
         totalGradients = [0] * len(self.params)
         for l in xrange(self.L):
             e = np.random.normal(0,1,[self.dimZ,self.batch_size])
@@ -202,10 +192,35 @@ class AEVB:
 
         return totalGradients
 
-    def updateParams(self,totalGradients,N):
+    def _updateParams(self,totalGradients,N):
         for i in xrange(len(self.params)):
             self.h[i] += totalGradients[i]*totalGradients[i]
             prior = 0.5*self.params[i]*(i<5)
 
             #Include adagrad, include prior for weights
             self.params[i] = self.params[i] + (self.learning_rate)/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(self.batch_size/N))
+
+     def fit(self,data):
+     	[N,dimX] = data.shape
+     	self._initParams(self,dimX)
+
+        batches = np.linspace(0,N,N/self.batch_size+1)
+
+        for i in xrange(10):
+        	miniBatch = data[batches[i]:batches[i+1]]
+     		self._initH(self,miniBatch)
+
+
+        for i in xrange(0,len(batches)-2):
+            totalGradients = self._getGradients(miniBatch.T)
+            self._updateParams(totalGradients,N)
+
+    def transform(self,data):
+    	if self.continuous:
+    		return np.log(1+np.exp(data.dot(self.params[0].T) + params[6].T))
+    	else:
+    		return np.tanh(data.dot(self.params[0].T) + self.params[5].T)
+
+    def fit_transform(self,data):
+    	self.fit(data)
+    	return self.transform(data)
