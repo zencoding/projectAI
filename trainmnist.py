@@ -26,12 +26,12 @@ print "Loading MNIST data"
 data = np.concatenate((x_train,x_valid))
 
 dimZ = 20
-HU_decoder = 200
+HU_decoder = 400
 HU_encoder = HU_decoder
 
 batch_size = 100
 L = 1
-learning_rate = 0.1
+learning_rate = 0.01
 
 
 if args.double:
@@ -44,9 +44,9 @@ if args.double:
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 
 
-#if args.double:
-#    encoder.continuous = True
-#    encoder.data_sigma = np.std(data,0, keepdims=True).T
+if args.double:
+    encoder.continuous = True
+    encoder.data_sigma = np.std(data,0, keepdims=True).T
 
 print "Creating Theano functions"
 encoder.createGradientFunctions()
@@ -62,7 +62,7 @@ else:
     lowerbound = np.array([])
     testlowerbound = np.array([])
 
-for j in xrange(2000):
+for j in xrange(1000):
     encoder.lowerbound = 0
     print 'Iteration:', j
     encoder.iterate(data)
@@ -70,7 +70,7 @@ for j in xrange(2000):
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
 
     if j % 5 == 0:
-        print "Saving test lowerbound"
+        print "Calculating test lowerbound"
         testlowerbound = np.append(testlowerbound,encoder.getLowerBound(x_test))
 
     if args.save:

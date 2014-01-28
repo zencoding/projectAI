@@ -9,22 +9,29 @@ learning_rate = 0.01
 batch_size=100
 n_iter=5
 
+
+
 rbm = neural_network.BernoulliRBM(n_components,learning_rate,batch_size,n_iter)
+
 
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 
+print 'training RBM...'
 h_train = rbm.fit_transform(x_train)
+print 'a'
 h_valid = rbm.transform(x_valid)
 h_test = rbm.transform(x_test)
 
 print rbm.get_params(True)
+
+print 'done'
 
 [N,dimH] = h_train.shape
 print N,dimH
 
 w = np.zeros([10,dimH])
 b = np.zeros([10])
-for i in xrange(5):
+for i in xrange(50):
     print 'iteration: ', i
     for j in xrange(N):
         w,b = sgd_iter(h_train[j],t_train[j],w,b)

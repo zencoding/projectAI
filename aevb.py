@@ -81,14 +81,20 @@ class AEVB:
             y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
 
+        #define analytical terms for logqzx and logpz, and calculate total logp
+        #NB BROARDCAST THE 1! ALSO, CHECK FOR L>1 
+        rest = 0.5* T.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - T.exp(2*log_sigma_encoder) )
+        logp = logpxz + rest
+
+
         #Set up q 
-        logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
+        #logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
 
         #Compute prior
-        logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
+        #logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
 
         #Define lowerbound
-        logp = logpxz + logpz - logqzx
+        #logp = logpxz + logpz - logqzx
 
         #Compute all the gradients
         if self.continuous:

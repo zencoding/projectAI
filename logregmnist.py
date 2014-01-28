@@ -7,7 +7,7 @@ Otto Fabius - 5619858
 import numpy as np
 from log_regression import *
 from data import load_mnist
-from plot import plot_accuracy
+# from plot import plot_accuracy
 
 import argparse
 
@@ -18,36 +18,33 @@ parser.add_argument("-d", "--double", help = "On Double AE?", default = False)
 
 args = parser.parse_args()
 
-iterations = 200
+iterations = 100
 
 print 'loading data'
-(x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
+(h_train, t_train), (h_valid, t_valid), (h_test, t_test) = load_mnist()
 
-datasetsize = x_train.shape[1]
-sample = np.random.choice(np.linspace(0, datasetsize-1, datasetsize))
-x_train = x_train[sample,:]
+datasetsize = h_train.shape[1]
 
 
-print 'creating h from saved params'
+if args.params:
+	print 'creating h from saved params'
 
-params = np.load(args.params)
+	params = np.load(args.params)
 
-hidden = lambda x: np.tanh(x.dot(params[0].T) + params[5].T)
-h_train = hidden(x_train)
-h_test = hidden(x_test)
-h_valid = hidden(x_valid)
-
-print args.double
+	hidden = lambda x: (np.tanh(x.dot(params[0].T) + params[5].T) + 1 )/2
+	h_train = hidden(h_train)
+	h_test = hidden(h_test)
+	h_valid = hidden(h_valid)
 
 if args.double:
     print 'calculating output of 2nd hidden layer'
     params = np.load(args.double)
-    hidden2 = lambda sp: np.log(1+np.exp(sp.dot(params[0].T) + params[5].T))
-    sigmoid = lambda si: 1/(1+np.exp(-si.dot(params[0].T + params[5])))
+    hidden2 = lambda sp: np.log(1+np.exp(sp.dot(params[0].T) + params[6].T))
+    sigmoid = lambda si: 1/(1+np.exp(-si.dot(params[0].T + params[6])))
 
-    h_train = hidden2((h_train+1)/2)
-    h_test = hidden2((h_test+1)/2)
-    h_valid = hidden2((h_valid+1)/2)
+    h_train = hidden2(h_train)
+    h_test = hidden2(h_test)
+    h_valid = hidden2(h_valid)
 
 
 (N,dimh) = h_train.shape
@@ -78,5 +75,5 @@ print 'percentage of test set correct: ', test_correct
 if args.save:
 	np.save(args.save + '_test', test_correct)
 	'creating and saving figure'
-	plot_accuracy(args.save, 'Accuracy of Log Reg on MNIST \n using AEVB hidden space ( N = ' + str(dimh) + ')')
+	# plot_accuracy(args.save, 'Accuracy of Log Reg on MNIST \n using AEVB hidden space ( N = ' + str(dimh) + ')')
 
