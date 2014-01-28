@@ -153,10 +153,13 @@ class AEVB:
 
         return totalGradients
 
-    def updateParams(self,totalGradients,N,batch_size):
+    def updateParams(self,totalGradients,N,current_batch_size):
         for i in xrange(len(self.params)):
             self.h[i] += totalGradients[i]*totalGradients[i]
-            prior = 0.5*self.params[i]*(i<5)
+            if i < 5 or (i < 6 and len(self.params) == 12):
+                prior = 0.5*self.params[i]
+            else:
+                prior = 0
 
             #Include adagrad, include prior for weights
-            self.params[i] = self.params[i] + self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(batch_size/N))
+            self.params[i] = self.params[i] + self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(current_batch_size/N))
