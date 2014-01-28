@@ -19,8 +19,10 @@ sizes = np.array([10,20,40,75,150,300,600,1000])
 print 'loading data'
 (x_train_load, t_train_load), (x_valid_load, t_valid_load), (x_test_load, t_test_load) = load_mnist()
 
-results = []
-results_features = []
+results_train = []
+results_valid = []
+results_features_train = []
+results_features_valid = []
 
 for size in sizes:
 	print 'dataset size ', size
@@ -32,15 +34,19 @@ for size in sizes:
 
 	print 'Training SVM'
 
-	gam = 0.1
+	gam = 0.01
 	clf = svm.SVC(gamma=gam)	
 	clf.fit(x_train, t_train)
 
-	print 'calculating results on validation set...'
+	dec = clf.predict(x_train)
+	result_train = sum(dec == t_train)*100/len(t_train)
+	results_train.append(result_train)
+	print 'result, train: ', result_train
+
 	dec = clf.predict(x_valid)
-	result = sum(dec == t_valid)*100/len(t_valid)
-	results.append(result)
-	print 'result: ', result
+	result_valid = sum(dec == t_valid)*100/len(t_valid)
+	results_valid.append(result_valid)
+	print 'result, validation: ', result_valid
 
 
 	if args.aevb:
@@ -56,19 +62,23 @@ for size in sizes:
 		clf = svm.SVC(gamma = gam)	
 		clf.fit(x_train, t_train)
 
-		print 'calculating results on validation set...'
-		dec = 	clf.predict(x_valid)
 
-		result_features = sum(dec == t_valid)*100/len(t_valid)
-		results_features.append(result_features)
-		print 'result on features: ', result_features
+		dec = clf.predict(x_train)
+		result_features_train = sum(dec == t_train)*100/len(t_train)
+		results_features_train.append(result_features_train)
+		print 'result on features, train: ', result_features_train
 
-plt.plot(sizes, results, sizes, results_features)
-plt.axis([0, 1000, 0, 100])
+		dec = clf.predict(x_valid)
+		result_features_valid = sum(dec == t_valid)*100/len(t_valid)
+		results_features_valid.append(result_features_valid)
+		print 'result on features, validation: ', result_features_valid
+
+plt.plot(sizes, results_train, sizes, results_valid, sizes, results_features_train, sizes, results_features_valid)
+plt.axis([-5, 1000, 0, 105])
 plt.title('Gamma = '+ str(gam))
 plt.xlabel('Size of Dataset')
 plt.ylabel('Accuracy')
-plt.legend( ('Au Naturel', 'On Features') )
+plt.legend( ('Train Reg', 'Val Reg', 'Train Feat', 'Val Feat') )
 if args.save:
 	plt.savefig(title + '.png')
 else:
