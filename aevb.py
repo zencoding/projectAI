@@ -132,7 +132,7 @@ class AEVB:
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
             e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[0]])
-            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch,eps=e)
+            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch.T,eps=e)
 
         return lowerbound/N
 
