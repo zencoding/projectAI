@@ -25,9 +25,9 @@ HU_encoder = 200
 
 dimZ = 2
 L = 1
-learning_rate = 0.01
+learning_rate = 0.02
 
-batch_size = 131
+batch_size = 100
 
 encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 encoder.continuous = True
@@ -49,14 +49,13 @@ else:
 
 print "Iterating"
 
-iteration = 1
-while True:
+for iteration in xrange(1,35000):
     print 'Iteration:', iteration
     encoder.lowerbound = 0
+    np.random.shuffle(data)
     encoder.iterate(data)
     print encoder.lowerbound/N
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
-    iteration += 1
     if args.save:
         print "Saving params"
         np.save(args.save,encoder.params)   
