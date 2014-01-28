@@ -32,3 +32,4 @@ def load_filtered_chinese():
     f = gzip.open('chinesefiltered.pkl.gz','rb')
     data = cPickle.load(f)
     f.close()
+    return data
