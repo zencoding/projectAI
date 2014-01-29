@@ -45,7 +45,7 @@ It takes three parameters:
 
 * "-d" for passing a filename to read the parameters from for training a double auto-encoder (only for trainmnist)
 
-example (run from root folder):
+Example (run from root folder):
 
     python -m train.trainmnist -s mnist.npy
 
@@ -68,6 +68,11 @@ Specifically for [logregmnist.py](logregression/logregmnist.py):
 
 * "-s" for passing a filename (ending in .npy) to save the scores of the training set to
 * "-d" for passing a filename to read the parameters from for classifying on double transformed data
+
+Example (run from root folder):
+
+	python -m logregression.logregmnist
+
 
 
 

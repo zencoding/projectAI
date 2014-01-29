@@ -12,7 +12,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--save", help="Specify file to save results", default = False)
-parser.add_argument("-p", "--params", help="Specify param file", default = True)
+parser.add_argument("-p", "--params", help="Specify param file", default = False)
 parser.add_argument("-d", "--double", help = "On Double AE?", default = False)
 
 args = parser.parse_args()
