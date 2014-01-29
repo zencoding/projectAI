@@ -76,32 +76,20 @@ class AEVB:
             mu_decoder = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             log_sigma_decoder = 0.5*(T.dot(W6,h_decoder) + b6)
             logpxz = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_decoder) - 0.5 * ((x - mu_decoder) / T.exp(log_sigma_decoder))**2)
+            rest = 0.5* T.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - T.exp(2*log_sigma_encoder) )
+            logp = logpxz + rest
+            gradvariables = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
         else:
             h_decoder = T.tanh(T.dot(W4,z) + b4)
             y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
             logpxz = -T.nnet.binary_crossentropy(y,x).sum()
-
-        #define analytical terms for logqzx and logpz, and calculate total logp
-        #NB BROARDCAST THE 1! ALSO, CHECK FOR L>1 
-        rest = 0.5* T.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - T.exp(2*log_sigma_encoder) )
-        logp = logpxz + rest
-
-
-        #Set up q 
-        #logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
-
-        #Compute prior
-        #logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
-
-        #Define lowerbound
-        #logp = logpxz + logpz - logqzx
-
-        #Compute all the gradients
-        if self.continuous:
-            gradvariables = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
-        else:
+            logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
+            logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
+            logp = logpxz + logpz - logqzx
             gradvariables = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
 
+
+        #Compute all the gradients
         derivatives = T.grad(logp,gradvariables)
 
         #Add the lowerbound so we can keep track of results
