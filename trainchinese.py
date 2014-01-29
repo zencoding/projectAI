@@ -36,7 +36,7 @@ encoder.createGradientFunctions()
 print "Initializing weights and biases"
 if args.params:
     print "Loading params from: {0}".format(args.params)
-    encoder.params, encoder.h, lowerbound = load_notest(args.params+'.npy')
+    encoder.params, encoder.h, lowerbound = load_notest(args.params)
 else:
     encoder.initParams()
     for i in xrange(0, 10):
