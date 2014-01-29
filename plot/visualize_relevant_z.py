@@ -27,6 +27,7 @@ matplotlib.rcParams.update({'font.size': 16})
 plt.legend(('20 dimensions','400 dimensions'),loc=4,prop={'size':18} )
 plt.tight_layout()	
 plt.savefig('N_irrelevant_hidden_dim_SS.png')
+plt.close()
 #plt.show()
 
 
@@ -53,4 +54,5 @@ matplotlib.rcParams.update({'font.size': 16})
 plt.legend(('20 dimensions','400 dimensions'),loc=4,prop={'size':18} )
 plt.tight_layout()	
 plt.savefig('N_irrelevant_hidden_dim_max.png')
+plt.close()
 #plt.show()

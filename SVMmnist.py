@@ -1,3 +1,6 @@
+# Trains and tests a SVM on MNIST. 
+
+
 from sklearn import svm
 import numpy as np
 from log_regression import *
