@@ -7,7 +7,6 @@ Otto Fabius - 5619858
 import numpy as np
 from log_regression import *
 from data import load_mnist
-# from plot import plot_accuracy
 
 import argparse
 
@@ -27,14 +26,14 @@ datasetsize = h_train.shape[1]
 
 
 if args.params:
-	print 'creating h from saved params'
+    print 'creating h from saved params'
 
-	params = np.load(args.params)
+    params = np.load(args.params)
 
-	hidden = lambda x: (np.tanh(x.dot(params[0].T) + params[5].T) + 1 )/2
-	h_train = hidden(h_train)
-	h_test = hidden(h_test)
-	h_valid = hidden(h_valid)
+    hidden = lambda x: (np.tanh(x.dot(params[0].T) + params[5].T) + 1 )/2
+    h_train = hidden(h_train)
+    h_test = hidden(h_test)
+    h_valid = hidden(h_valid)
 
 if args.double:
     print 'calculating output of 2nd hidden layer'
@@ -57,23 +56,21 @@ train = []
 valid = []
 
 for i in xrange(iterations):
-	print 'iteration: ', i
-	for j in xrange(N):
-		w,b = sgd_iter(h_train[j],t_train[j],w,b)
-	
-	valid_correct = calculate_percentage(h_valid,t_valid,w,b)	
-	print 'valid correct = ', valid_correct
+    print 'iteration: ', i
+    for j in xrange(N):
+            w,b = sgd_iter(h_train[j],t_train[j],w,b)
+    
+    valid_correct = calculate_percentage(h_valid,t_valid,w,b)   
+    print 'valid correct = ', valid_correct
 
-	if args.save:
-	    print "Saving results"
-	    valid.append(valid_correct)	
-	    np.save(args.save + '_val',valid)
+    if args.save:
+        print "Saving results"
+        valid.append(valid_correct) 
+        np.save(args.save + '_val',valid)
 
 test_correct = calculate_percentage(h_test,t_test,w,b)
 
 print 'percentage of test set correct: ', test_correct
 if args.save:
-	np.save(args.save + '_test', test_correct)
-	'creating and saving figure'
-	# plot_accuracy(args.save, 'Accuracy of Log Reg on MNIST \n using AEVB hidden space ( N = ' + str(dimh) + ')')
+    np.save(args.save + '_test', test_correct)
 
