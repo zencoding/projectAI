@@ -22,8 +22,6 @@ args = parser.parse_args()
 print 'loading data'
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 
-print x_train.shape
-
 print 'creating h from saved params'
 
 params = np.load(args.params)
@@ -45,8 +43,8 @@ print args.double
 if args.double:
     print 'calculating output of 2nd hidden layer'
     params = np.load(args.double)
-    hidden2 = lambda sp: np.log(1+np.exp(sp.dot(params[0].T) + params[5].T))
-    sigmoid = lambda si: 1/(1+np.exp(-si.dot(params[0].T + params[5])))
+    hidden2 = lambda sp: np.log(1+np.exp(sp.dot(params[0].T) + params[6].T))
+    sigmoid = lambda si: 1/(1+np.exp(-si.dot(params[0].T + params[6])))
 
     h_train = hidden2((h_train+1)/2)
     h_test = hidden2((h_test+1)/2)

@@ -3,6 +3,7 @@ import numpy as np
 from log_regression import *
 from data import load_mnist
 import matplotlib.pyplot as plt
+import matplotlib
 
 import argparse
 
@@ -34,7 +35,7 @@ for size in sizes:
 
 	print 'Training SVM'
 
-	gam = 0.01
+	gam = 0.3
 	clf = svm.SVC(gamma=gam)	
 	clf.fit(x_train, t_train)
 
@@ -73,14 +74,18 @@ for size in sizes:
 		results_features_valid.append(result_features_valid)
 		print 'result on features, validation: ', result_features_valid
 
-plt.plot(sizes, results_train, sizes, results_valid, sizes, results_features_train, sizes, results_features_valid)
-plt.axis([-5, 1000, 0, 105])
-plt.title('Gamma = '+ str(gam))
-plt.xlabel('Size of Dataset')
-plt.ylabel('Accuracy')
-plt.legend( ('Train Reg', 'Val Reg', 'Train Feat', 'Val Feat') )
+	print 'making plots for comparison'
+	plt.plot(sizes, results_train, 'r-', sizes, results_valid, 'r--', sizes, results_features_train, 'b-', sizes, results_features_valid, 'b--', linewidth = 3)
+	plt.axis([-5, 1000, 0, 105])
+	plt.title('Gamma = '+ str(gam))
+	plt.xlabel('Size of Dataset')
+	plt.ylabel('Accuracy')
+	plt.legend( ('Train Reg', 'Val Reg', 'Train Feat', 'Val Feat'),loc=4,prop={'size':15} )
+	matplotlib.rcParams.update({'font.size': 20})
+	plt.tight_layout()
+
 if args.save:
-	plt.savefig(title + '.png')
+	plt.savefig(args.save + '.png')
 else:
 	plt.show()
 

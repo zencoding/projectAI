@@ -25,7 +25,7 @@ print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 data = np.concatenate((x_train,x_valid))
 
-dimZ = 20
+dimZ = 400
 HU_decoder = 400
 HU_encoder = HU_decoder
 
@@ -62,7 +62,7 @@ else:
     lowerbound = np.array([])
     testlowerbound = np.array([])
 
-for j in xrange(1000):
+for j in xrange(1500):
     encoder.lowerbound = 0
     print 'Iteration:', j
     encoder.iterate(data)
