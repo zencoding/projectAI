@@ -1,10 +1,16 @@
-# Trains and tests a SVM on MNIST. 
+"""
+Project AI
+Joost van Amersfoort - 10021248
+Otto Fabius - 5619858
+"""
 
+# Trains and tests a SVM with RBF kernel on multiple subsets of MNIST, both on raw data and on trained encoding parameters
+# Creates 
 
 from sklearn import svm
 import numpy as np
 from log_regression import *
-from data import load_mnist
+from loadsave import load_mnist
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -13,7 +19,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--save", help="Specify file to save results", default = False)
 parser.add_argument("-a", "--aevb", help="Specify param file", default = False)
-
+parser.add_argument("-g", "--gamma", help="Specify gamma (precision of RBF kernel)", default = False)
 
 
 args = parser.parse_args()
@@ -28,6 +34,15 @@ results_valid = []
 results_features_train = []
 results_features_valid = []
 
+print 'Training SVM'
+
+if args.gamma:
+	gam = args.gamma
+	print 'gamma = ', gam
+else:
+	print 'Using default settings for gamma'
+	gam = 0
+
 for size in sizes:
 	print 'dataset size ', size
 
@@ -36,10 +51,8 @@ for size in sizes:
 	x_valid = x_valid_load[:1000,:]
 	t_valid = t_valid_load[:1000]
 
-	print 'Training SVM'
 
-	gam = 0.3
-	clf = svm.SVC(gamma=gam)	
+	clf = svm.SVC(gamma=float(gam))	
 	clf.fit(x_train, t_train)
 
 	dec = clf.predict(x_train)
@@ -63,7 +76,7 @@ for size in sizes:
 		x_valid = hidden(x_valid)
 
 		print 'Training SVM'
-		clf = svm.SVC(gamma = gam)	
+		clf = svm.SVC(gamma = float(gam))	
 		clf.fit(x_train, t_train)
 
 
@@ -77,15 +90,21 @@ for size in sizes:
 		results_features_valid.append(result_features_valid)
 		print 'result on features, validation: ', result_features_valid
 
-	print 'making plots for comparison'
-	plt.plot(sizes, results_train, 'r-', sizes, results_valid, 'r--', sizes, results_features_train, 'b-', sizes, results_features_valid, 'b--', linewidth = 3)
-	plt.axis([-5, 1000, 0, 105])
-	plt.title('Gamma = '+ str(gam))
-	plt.xlabel('Size of Dataset')
-	plt.ylabel('Accuracy')
-	plt.legend( ('Train Reg', 'Val Reg', 'Train Feat', 'Val Feat'),loc=4,prop={'size':15} )
-	matplotlib.rcParams.update({'font.size': 20})
-	plt.tight_layout()
+print 'making plots for comparison'
+
+print results_train, sizes
+
+plt.plot(sizes, results_train, 'r-', linewidth = 3)
+plt.plot(sizes, results_valid, 'r--', linewidth = 3)
+plt.plot(sizes, results_features_train, 'b-', linewidth = 3)
+plt.plot(sizes, results_features_valid, 'b--', linewidth = 3)
+plt.axis([-5, 1000, 0, 105])
+plt.title('Gamma = '+ str(gam))
+plt.xlabel('Size of Dataset')
+plt.ylabel('Accuracy')
+plt.legend( ('Train set, pixel values', 'Test set, pixel values', 'Train set, features', 'Test set, features'),loc=7,prop={'size':15} )
+matplotlib.rcParams.update({'font.size': 20})
+plt.tight_layout()
 
 if args.save:
 	plt.savefig(args.save + '.png')

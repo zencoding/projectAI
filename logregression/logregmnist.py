@@ -6,7 +6,7 @@ Otto Fabius - 5619858
 
 import numpy as np
 from log_regression import *
-from data import load_mnist
+from loadsave import load_mnist
 
 import argparse
 
@@ -17,7 +17,7 @@ parser.add_argument("-d", "--double", help = "On Double AE?", default = False)
 
 args = parser.parse_args()
 
-iterations = 200
+iterations = 500
 
 print 'loading data'
 (h_train, t_train), (h_valid, t_valid), (h_test, t_test) = load_mnist()

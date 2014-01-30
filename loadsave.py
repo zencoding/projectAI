@@ -1,3 +1,9 @@
+"""
+Project AI
+Joost van Amersfoort - 10021248
+Otto Fabius - 5619858
+"""
+
 # Contains functions for loading data from different datasets and for loading/saving paramaters
 
 import gzip, cPickle

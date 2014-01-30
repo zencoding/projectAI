@@ -1,3 +1,11 @@
+"""
+Project AI
+Joost van Amersfoort - 10021248
+Otto Fabius - 5619858
+"""
+
+# NEEDS COMMENTING
+
 import numpy as np
 from sklearn import neural_network
 from data import load_mnist
@@ -9,10 +17,7 @@ learning_rate = 0.01
 batch_size=100
 n_iter=5
 
-
-
 rbm = neural_network.BernoulliRBM(n_components,learning_rate,batch_size,n_iter)
-
 
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 
