@@ -4,6 +4,8 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
+"""A script for training an auto-encoder on a subset of the Chinese dataset"""
+
 import aevb
 from data import load_filtered_chinese
 from loadsave import load_notest, save_notest
@@ -54,7 +56,6 @@ for j in xrange(20000):
     if args.save:
         print "Saving params"
         save_notest(args.save, encoder.params, encoder.h, lowerbound)
-
 
 # if j % 5 == 0:
     # print "Saving test lowerbound"

@@ -1,11 +1,10 @@
-#contains functions for performing logistic regression on data X and classes T
-
 """
 Project AI
 Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
+"""contains functions for performing logistic regression on data X and classes T"""
 import numpy as np
 
 def logreg_gradients(x,t,w,b):
