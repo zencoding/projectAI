@@ -17,8 +17,14 @@
 \maketitle
 
 \begin{abstract}
-In this paper, we use the recently developed unsupervised learning method of Auto-Encoding Variational Bayes (Kingma and Welling, 2014) on various datasets. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We apply the learned auto-encoders for compression, classification, (.......). Several results from Kingma and Welling (2014) were reproduced, as well as ........
+In this paper, we implement and experiment with an auto-encoder based with variational Bayes \cite{kingma2013auto}. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We apply the learned auto-encoders for sampling and classification. Several results from \cite{kingma2013auto} were reproduced, in addition to this we performed classification on transformed data.
 \end{abstract}
+
+\section{Introduction}
+
+Before explaining what novelty was introduced by \cite{kingma2013auto}, it is first necessary to create some context and explain what an auto-encoder is, what it is used for and their current implementation. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
+
+\cite{bengio2009learning} describe using auto-encoders as building blocks for a deep multi-layer neural network. 
 
 \section{AEVB}
 
@@ -79,7 +85,7 @@ In this section, we outline our experiments and present our results. We will pre
 
 \subsection{Reproducing results}
 
-Firstly, we performed some experiments to reproduce the results of (ref...). This way, we can verify the correctness of our implementation. In their paper, an Auto-Encoder was trained on both binary valued data (MNIST handwritten digits) and continuous valued data (Frey Faces, ref?).
+Firstly, we performed some experiments to reproduce the results of \cite{kingma2013auto}. This way, we can verify the correctness of our implementation. In their paper, an Auto-Encoder was trained on both binary valued data (MNIST handwritten digits) and continuous valued data (Frey Faces, ref?).
 
 \subsubsection{MNIST}
 
@@ -153,7 +159,9 @@ In practice it is hard to obtain large annotated datasets for supervised learnin
 
 
 
+\pagebreak 
 \section*{References}
-
+\bibliographystyle{amsplain}
+\bibliography{references}
 
 \end{document}
