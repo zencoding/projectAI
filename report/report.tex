@@ -2,6 +2,7 @@
 
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
+\usepackage{graphicx}
 
 \renewcommand{\thesection}{\arabic{section}}
 
@@ -78,29 +79,75 @@ In this section, we outline our experiments and present our results. We will pre
 
 \subsection{Reproducing results}
 
-Firstly, we performed some experiments to reproduce the results of (ref...). In their paper, an Auto-Encoder was trained on both data consisting of distinct classes (MNIST handwritten digits) and continuous data (Frey Faces).
+Firstly, we performed some experiments to reproduce the results of (ref...). This way, we can verify the correctness of our implementation. In their paper, an Auto-Encoder was trained on both binary valued data (MNIST handwritten digits) and continuous valued data (Frey Faces, ref?).
 
 \subsubsection{MNIST}
 
+We first trained an auto-encoder with 400 hidden units and 20-dimensional latent space with SGD-VB on MNIST, in order to compare the lower bound of the log likelihood with (ref). Figure 1 shows the lower bound per data point during training for both the training set and the test set.  \\ 
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[height=4in,width=5in]{lowerboundAEVBMNIST.png}
+\caption{Lowerbound of the log likelihood per datapoint of both the train and test data during training. ...............}
+\end{center}
+\end{figure}
+
+Also, we trained an auto-encoder with two-dimensional latent space in order to generate data for varying values of the latent variables along both latent dimensions. .........blablabla manifold......... The resulting manifold is shown in Figure 2.
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[height=4in,width=5in]{manifoldMNIST.png}
+\caption{...............}
+\end{center}
+\end{figure}
+
 \subsubsection{Frey Faces}
+
+Also for the continuous valued Frey Face dataset, we trained an auto-encoder with SGDVB to compare the progression of the lower bound to that in Kingma and Welling [1]. Figure 3 shows the lower bound of the training and test set as training progresses for latent dimensionality of 10, with 200 hidden units.
+
+\begin{figure}[htb]
+\centering
+\begin{minipage}{0.5\textwidth}
+\includegraphics[height=3in,width=3.6in]{lowerboundFF.png}
+\caption{...............}
+\end{minipage}%
+\centering
+\begin{minipage}{0.5\textwidth}
+\includegraphics[height=3in,width=3.5in]{manifoldFF.png}\caption{...............}
+\end{minipage}
+\end{figure}
+
+Training an auto-encoder with 200 hidden units and 2 latent dimensions once again enables visualization of generated data along both dimensions, shown in Figure 4.
+
+These results achieved with our implementation of SGDVB auto-encoders are very similar to those to those presented in Kingma and Welling [1], which shows that our implementation is correct and that these results can be achieved consistently. 
 
 \subsection{Classification}
 
-In the remainder of the experiments, we will focus on one useful application of AEVB classification. In particular, we will examine the performance of logistic regression on various representations of the same dataset. For logistic regression, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we hop to improve the results of classification (supervised learning) with AEVB (unsupervised learning).
+In the remainder of the experiments, we will focus on one useful application of learned features, namely in classification. Before we use a classification method, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we aim to improve the results of classification (supervised learning) with SGDVB (unsupervised learning). In particular, we will examine the performance of logistic regression on various representations of the same dataset. Classifying on features calculated by a one-layer neural network effectively results in a two-layered MLP, of which the first layer is not trained with supervised learning after training it with SGDVB. We compare obtained results to those obtained when using features trained with a Restricted Bolzmann Machine, which is a popular method for such (??) feature extraction and is frequently used for weight initialization in layers of deep belief nets (ref).
 
 \subsubsection{Classifying MNIST on features}
 
-compare baseline log regression and on RBM, AE, Double AE
+In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0*10^7$ training examples, and reached a lower bound of -101.53 on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5*10^7$ training examples from the MNIST training set. This yielded the same results as $0.5*10^7$ training examples and thus was enough iterations for convergence.\\
+Logistic regression was run until results on the validation set declined or stabilized. The results are shown in Table 1.
+
+\begin{table}
+\begin{tabular}{|l|c|c|r|}
+\hline
+& Raw Data & SGDVB AE Features & RBM Features \\ \hline
+No. of training examples until convergence ($*10^6$) & 1.5 & 4.0 & 3.0 \\ \hline 
+Test set accuracy & 93.36 & 97.54 & 96.29
+\end{tabular}
+\end{table}
+
+Include double AE?
 
 \subsubsection{Classifying Chinese characters}
 
-log regression op pixels, single AE features, double AE features (?)
+log regression op pixels, single AE features
 
 \subsubsection{Classification on small datasets}
 
-In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of features calculated from a trained Auto-Encoder for improving the results of logistic regression on small subsets of MNIST (and chinese characters?). 
-
-MNIST - resultaten al op docs
+In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of features calculated from a trained Auto-Encoder for improving the classification results for small subsets of MNIST (and Tsaie Niis characters?). Once again, logistic regression is our classification method of choice. \\ In our experiment, we selected the first $x$ training examples from the training set of MNIST as our training set, where $x$ started at 4 and was increased each time by multiplying it with 2, up to a size of 2048. To evaluate the results for each dataset size, we took the first 1000 datapoints of the MNIST test set.
 
 \section*{Conclusion}
 
