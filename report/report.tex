@@ -8,7 +8,7 @@
 
 \begin{document}
 
-\title{Project AI \\ Auto-Encoding Variational Bayes}
+\title{Project AI \\ Auto-Encoding Stochastic Gradient Variational Bayes}
 \author{	
 	Joost van Amersfoort \\ 10021248  
 	\and
@@ -17,7 +17,7 @@
 \maketitle
 
 \begin{abstract}
-In this paper, we implement and experiment with an auto-encoder based with variational Bayes \cite{kingma2013auto}. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We apply the learned auto-encoders for sampling and classification. Several results from \cite{kingma2013auto} were reproduced, in addition to this we performed classification on transformed data.
+In this paper, we implement and experiment with an auto-encoder trained with Stochastic Gradient VB \cite{kingma2013auto}. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We use learned auto-encoders for generating new data and use the extracted features for classification. Several results from \cite{kingma2013auto} were reproduced and the results further show that the learned features generally improve classification accuracy.
 \end{abstract}
 
 \section{Introduction}
@@ -54,14 +54,14 @@ We would like to learn $\theta$ by gradient ascent/descent by differentiating so
 
 \subsection{Sampling to obtain gradients}
 
-Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, Kingma and Welling (2014) derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
+Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, \cite{kingma2013auto} derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
 
 \begin{align}
 \mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
 \end{align}
 
 Here, $z$ is sampled $l$ times from $q_{\phi}(z|x)$ for each datapoint $x^{(i)}$. Because $z$ therefore depends on parameters $\theta$, differentiating $\mathcal{L}$ w.r.t. $\phi$ will lead to a gradient which is influenced by the current parameters $\phi$. 
-As a solution to this problem, Kingma and Welling (2014) reparameterize the samples of $z$ from $q(z|x)$ as
+As a solution to this problem, \cite{kingma2013auto} reparameterize the samples of $z$ from $q(z|x)$ as
 \begin{align}
 z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim p(\mathbf{\epsilon}) 
 \end{align} 
@@ -70,7 +70,7 @@ Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equatio
 
 \subsection{Modelling the conditional distributions}
 
-For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to Kingma and Welling (2014). These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
+For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to \cite{kingma2013auto}. These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
 
 IETS OVER BINARY/CONTINUOUS OUTPUT \\
 IETS MEER OVER NEURAL NETWORKS OID? IIG REFS...
@@ -85,31 +85,31 @@ In this section, we outline our experiments and present our results. We will pre
 
 \subsection{Reproducing results}
 
-Firstly, we performed some experiments to reproduce the results of \cite{kingma2013auto}. This way, we can verify the correctness of our implementation. In their paper, an Auto-Encoder was trained on both binary valued data (MNIST handwritten digits) and continuous valued data (Frey Faces, ref?).
+Firstly, we performed some experiments to reproduce the results of \cite{kingma2013auto}. This way, we can verify the correctness of our implementation. In their paper, an Auto-Encoder was trained on both binary valued data (MNIST handwritten digits) and continuous valued data (Frey Faces \footnote{Available at http://www.cs.nyu.edu/ ̃roweis/data.html}).
 
 \subsubsection{MNIST}
 
-We first trained an auto-encoder with 400 hidden units and 20-dimensional latent space with SGD-VB on MNIST, in order to compare the lower bound of the log likelihood with (ref). Figure 1 shows the lower bound per data point during training for both the training set and the test set.  \\ 
+We first trained an auto-encoder with 400 hidden units and 20-dimensional latent space with SGD-VB on MNIST, in order to compare the lower bound of the log likelihood with \cite{kingma2013auto}. Figure 1 shows the lower bound per data point during training for both the training set and the test set.  \\ 
 
 \begin{figure}[htb]
 \begin{center}
-\includegraphics[height=4in,width=5in]{lowerboundAEVBMNIST.png}
-\caption{Lowerbound of the log likelihood per datapoint of both the train and test data during training. ...............}
+\includegraphics[height=3.1in,width=4in]{lowerboundAEVBMNIST.png}
+\caption{Lower bound of the log likelihood per datapoint of both the train and test data during training. ...............}
 \end{center}
 \end{figure}
 
-Also, we trained an auto-encoder with two-dimensional latent space in order to generate data for varying values of the latent variables along both latent dimensions. .........blablabla manifold......... The resulting manifold is shown in Figure 2.
+Also, we trained an auto-encoder with two-dimensional latent space in order to generate data for varying values of the latent variables along both latent dimensions. The resulting manifold is shown in Figure 2.
 
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[height=4in,width=5in]{manifoldMNIST.png}
-\caption{...............}
+\caption{Visualization of generated data with two-dimensional latent space. Each datapoint was generated by calculating the mean outputs of the trained auto-encoder from a different hidden representation. The position in the total image reflects the coordinates of the hidden space and each image represents equal probability mass.}
 \end{center}
 \end{figure}
 
 \subsubsection{Frey Faces}
 
-Also for the continuous valued Frey Face dataset, we trained an auto-encoder with SGDVB to compare the progression of the lower bound to that in Kingma and Welling [1]. Figure 3 shows the lower bound of the training and test set as training progresses for latent dimensionality of 10, with 200 hidden units.
+Also for the continuous valued Frey Face dataset, we trained an auto-encoder with SGVB to compare the progression of the lower bound to that in \cite{kingma2013auto}. Figure 3 shows the lower bound of the training and test set as training progresses for latent dimensionality of 10, with 200 hidden units.
 
 \begin{figure}[htb]
 \centering
@@ -125,29 +125,32 @@ Also for the continuous valued Frey Face dataset, we trained an auto-encoder wit
 
 Training an auto-encoder with 200 hidden units and 2 latent dimensions once again enables visualization of generated data along both dimensions, shown in Figure 4.
 
-These results achieved with our implementation of SGDVB auto-encoders are very similar to those to those presented in Kingma and Welling [1], which shows that our implementation is correct and that these results can be achieved consistently. 
+These results achieved with our implementation of SGDVB auto-encoders are very similar to those to those presented in \cite{kingma2013auto}, which shows that our implementation is correct and that these results can be achieved consistently. 
 
 \subsection{Classification}
 
-In the remainder of the experiments, we will focus on one useful application of learned features, namely in classification. Before we use a classification method, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we aim to improve the results of classification (supervised learning) with SGDVB (unsupervised learning). In particular, we will examine the performance of logistic regression on various representations of the same dataset. Classifying on features calculated by a one-layer neural network effectively results in a two-layered MLP, of which the first layer is not trained with supervised learning after training it with SGDVB. We compare obtained results to those obtained when using features trained with a Restricted Bolzmann Machine, which is a popular method for such (??) feature extraction and is frequently used for weight initialization in layers of deep belief nets (ref).
+In the remainder of the experiments, we will focus on one useful application of learned features, namely in classification. Before we use a classification method, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we aim to improve the results of classification (supervised learning) with SGDVB (unsupervised learning). In particular, we will examine the performance of logistic regression on various representations of the same dataset. Classifying on features calculated by a one-layer neural network effectively results in a two-layered MLP, of which the first layer is not trained with supervised learning after training it with SGDVB. We compare obtained results to those obtained when using features trained with a Restricted Bolzmann Machine, which is a popular method for such (??) feature extraction and is frequently used for weight initialization in layers of deep belief nets (e.g. \cite{bengio2007greedy} ).
 
 \subsubsection{Classifying MNIST on features}
 
-In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0*10^7$ training examples, and reached a lower bound of -101.53 on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5*10^7$ training examples from the MNIST training set. This yielded the same results as $0.5*10^7$ training examples and thus was enough iterations for convergence.\\
+In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0\cdot 10^7$ training examples, and reached a lower bound of $-101.53$ on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5\cdot 10^7$ training examples from the MNIST training set. This yielded the same results as $0.5\cdot 10^7$ training examples and thus was enough iterations for convergence.\\
 Logistic regression was run until results on the validation set declined or stabilized. The results are shown in Table 1.
 
 \begin{table}
 \begin{tabular}{|l|c|c|r|}
 \hline
-& Raw Data & SGDVB AE Features & RBM Features \\ \hline
-No. of training examples until convergence ($*10^6$) & 1.5 & 4.0 & 3.0 \\ \hline 
+& Raw Data & SGVB AE Features & RBM Features \\ \hline
+No. of training examples until convergence ($\cdot 10^6$) & 1.5 & 4.0 & 3.0 \\ \hline 
 Test set accuracy & 93.36 & 97.54 & 96.29
 \end{tabular}
 \end{table}
 
-Include double AE?
+As expected, using features calculated with the trained RBM improved the test set accuracy. However, the results using the trained auto-encoder were even better, leading to an error rate of only 2.46\%! This is an important finding, as auto-encoding SGVB proves to be a at least viable alternative to using an RBM for unsupervised learning. Besides outperforming RBM's (at least for this task), AE SGVB is theoretically more attractive than RBM's as it has a clearer objective that is maximized, and allows for calculating the lower bound, allowing for (efficient) monitoring during optimization and comparison  of lower bound across various parameter settings.\\
+As the features were extracted from a one-layer neural network, this result was effectively achieved with a two-layer neural network, and it compares well to the 'classic' results achieved with two-layer NNs by \cite{lecun1998gradient}, who was only able to further improve results by deskewing. In this experiment, the first layer was not trained beyond unsupervised learning. Training both layers of the neural network during supervised learning could therefore further improve results.
 
 \subsubsection{Classifying Chinese characters}
+
+To investigate whether the boost in classification accuracy generalizes (at least in part) to other data, we also performed classification on the handwritten Chinese character dataset (voetnote, referentie of iets). This dataset consists of $1.1\cdot 10^6$
 
 log regression op pixels, single AE features
 
