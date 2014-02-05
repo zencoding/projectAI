@@ -22,9 +22,13 @@ In this paper, we implement and experiment with an auto-encoder trained with Sto
 
 \section{Introduction}
 
-Before explaining what novelty was introduced by \cite{kingma2013auto}, it is first necessary to create some context and explain what an auto-encoder is, what it is used for and their current implementation. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
+Before explaining what novelty was introduced by \cite{kingma2013auto}, it is first necessary to create some context and explain what an auto-encoder is and what it can be used for. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
 
-\cite{bengio2009learning} describe using auto-encoders as building blocks for a deep multi-layer neural network. 
+The main application of auto-encoders, as \cite{bengio2009learning} describe, is as building blocks for a deep multi-layer neural network. An example of this application is to first train an auto-encoder on unlabeled data, then another auto-encoder is trained on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. The last step is to train a supervised neural network on the output of the stacked auto-encoder. The supervised criterion can then be used tune all the parameters of deep network. 
+
+However, for many classes of probabilistic models there is no tractable estimator for the log-likelihood. Therefore, in practice Restricted Boltzmann Machines are used as building blocks and the network is called a Deep Belief Network, as described in detail in \cite{hinton2006reducing}.
+
+
 
 \section{AEVB}
 
