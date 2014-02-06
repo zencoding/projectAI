@@ -22,13 +22,7 @@ In this paper, we implement and experiment with an auto-encoder trained with Sto
 
 \section{Introduction}
 
-Before explaining what novelty was introduced by \cite{kingma2013auto}, it is first necessary to create some context and explain what an auto-encoder is and what it can be used for. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
-
-The main application of auto-encoders, as \cite{bengio2009learning} describe, is as building blocks for a deep multi-layer neural network. An example of this application is to first train an auto-encoder on unlabeled data, then another auto-encoder is trained on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. The last step is to train a supervised neural network on the output of the stacked auto-encoder. The supervised criterion can then be used tune all the parameters of deep network. 
-
-However, for many classes of probabilistic models there is no tractable estimator for the log-likelihood. Therefore, in practice Restricted Boltzmann Machines are used as building blocks and the network is called a Deep Belief Network, as described in detail in \cite{hinton2006reducing}.
-
-
+Recently Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, in this report we describe the novelty that is introduced and look at several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is more robust to overfitting. 
 
 \section{AEVB}
 
@@ -73,15 +67,16 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection{Modelling the conditional distributions}
-
 For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to \cite{kingma2013auto}. These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
 
-IETS OVER BINARY/CONTINUOUS OUTPUT \\
-IETS MEER OVER NEURAL NETWORKS OID? IIG REFS...
+\section{Auto-encoders}
 
-This way, once we have trained the two networks, we have an \textit{encoder} that maps $\mathbf{x}$ to its hidden variables $\mathbf{z}$, and a (generative) \textit{decoder} that maps any combination of hidden variables to a (new) datapoint $\mathbf{x}$. This has a strong similarity to auto-encoders (refs??). 
+In the paper, Kingma and Welling implement an auto-encoder based on the reparametrization trick. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
 
-The encoder allows us to compress and/or organize data. Inpainting, denoising and super-resolution (up to the resolution on which is trained) can be realized by generating the hidden representation from the datapoint with the encoder, and creating the desired output with the decoder.
+An important application of auto-encoders, as \cite{bengio2009learning} describe, is as building blocks for a deep multi-layer neural network. An example of this application is to first train an auto-encoder on unlabeled data, then another auto-encoder is trained on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. The last step is to train a supervised neural network on the output of the stacked auto-encoder. The supervised criterion can then be used tune all the parameters of deep network. 
+
+However, for many classes of probabilistic models there is no tractable estimator for the log-likelihood. Therefore, in practice Restricted Boltzmann Machines are used as building blocks and the network is called a Deep Belief Network, as described in detail in \cite{hinton2006reducing}.
+
 
 \section{Experiments}
 
@@ -98,7 +93,7 @@ We first trained an auto-encoder with 400 hidden units and 20-dimensional latent
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[height=3.1in,width=4in]{lowerboundAEVBMNIST.png}
-\caption{Lower bound of the log likelihood per datapoint of both the train and test data during training. ...............}
+\caption{Lower bound of the log likelihood per datapoint of both the train and test data during training}
 \end{center}
 \end{figure}
 
@@ -119,11 +114,11 @@ Also for the continuous valued Frey Face dataset, we trained an auto-encoder wit
 \centering
 \begin{minipage}{0.5\textwidth}
 \includegraphics[height=3in,width=3.6in]{lowerboundFF.png}
-\caption{...............}
+\caption{Lower bound of the log likelihood per datapoint of the Frey Face dataset during training}
 \end{minipage}%
 \centering
 \begin{minipage}{0.5\textwidth}
-\includegraphics[height=3.2in,width=3.2in]{manifoldFF.png}\caption{...............}
+\includegraphics[height=3.2in,width=3.2in]{manifoldFF.png}\caption{Visualization of generated data from an auto-encoder trained two-dimensional latent space on the Frey Face dataset}
 \end{minipage}
 \end{figure}
 
@@ -194,7 +189,6 @@ svm experimentjes
 
 
 \pagebreak 
-\section*{References}
 \bibliographystyle{amsplain}
 \bibliography{references}
 
