@@ -8,6 +8,8 @@ import numpy as np
 import theano as th
 import theano.tensor as T
 
+"""This class implements an auto-encoder with Variational Bayes"""
+
 class AEVB:
     def __init__(self, HU_decoder, HU_encoder, dimX, dimZ, batch_size, L=1, learning_rate=0.01):
         self.HU_decoder = HU_decoder
@@ -24,7 +26,9 @@ class AEVB:
 
         self.continuous = False
 
+
     def initParams(self):
+    	"""Initialize weights and biases, depending on if continuous data is modeled an extra weight matrix is created"""
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
         b1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,1))
 
@@ -40,14 +44,18 @@ class AEVB:
         W5 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
         b5 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
 
-        self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
         if self.continuous:
             W6 = np.random.normal(0,self.sigmaInit,(self.dimX,self.HU_decoder))
             b6 = np.random.normal(0,self.sigmaInit,(self.dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
+        else:
+	        self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
+
+        self.h = [0.01] * len(self.params)
+
 
     def initH(self,miniBatch):
-        self.h = [0.01] * len(self.params)
+    	"""Compute the gradients and use this to initialize h"""
         totalGradients = self.getGradients(miniBatch)
         for i in xrange(len(totalGradients)):
             self.h[i] += totalGradients[i]*totalGradients[i]
@@ -99,7 +107,7 @@ class AEVB:
         self.lowerboundfunction = th.function(gradvariables + [x,eps], logp, on_unused_input='ignore')
 
     def iterate(self, data):
-        """Compute the gradients and update parameters"""
+       	"""Main method, slices data in minibatches and performs an iteration"""
         [N,dimX] = data.shape
         batches = np.arange(0,N,self.batch_size)
         if batches[-1] != N:
@@ -111,6 +119,7 @@ class AEVB:
             self.updateParams(totalGradients,N,miniBatch.shape[0])
 
     def getLowerBound(self,data):
+    	"""Use this method for example to compute lower bound on testset"""
         lowerbound = 0
         [N,dimX] = data.shape
         batches = np.arange(0,N,self.batch_size)
@@ -126,6 +135,7 @@ class AEVB:
 
 
     def getGradients(self,miniBatch):
+    	"""Compute the gradients for one minibatch and check if these do not contain NaNs"""
         totalGradients = [0] * len(self.params)
         for l in xrange(self.L):
             e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
@@ -142,6 +152,7 @@ class AEVB:
         return totalGradients
 
     def updateParams(self,totalGradients,N,current_batch_size):
+    	"""Update the parameters, taking into account AdaGrad and a prior"""
         for i in xrange(len(self.params)):
             self.h[i] += totalGradients[i]*totalGradients[i]
             if i < 5 or (i < 6 and len(self.params) == 12):
@@ -149,5 +160,4 @@ class AEVB:
             else:
                 prior = 0
 
-            #Include adagrad, include prior for weights
-            self.params[i] = self.params[i] + self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(current_batch_size/N))
+            self.params[i] += self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(current_batch_size/N))

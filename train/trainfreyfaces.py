@@ -4,8 +4,12 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
+"""This script trains an auto-encoder on the frey face dataset and keeps track of the lowerbound"""
+
+#example: python -m train.trainfreyfaces -s freyfaces.npy
+
 import aevb
-from data import load_ff
+from loadsave import load_ff,save_notest
 import numpy as np
 import cPickle
 import argparse
@@ -58,6 +62,4 @@ for iteration in xrange(1,35000):
     lowerbound = np.append(lowerbound,encoder.lowerbound/N)
     if args.save:
         print "Saving params"
-        np.save(args.save,encoder.params)   
-        np.save('h' + args.save,encoder.h)
-        np.save('lowerbound' + args.save,lowerbound)
+        save_notest(args.save,encoder.params,encoder.h,lowerbound)

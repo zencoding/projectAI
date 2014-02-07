@@ -6,6 +6,8 @@ import numpy as np
 from PIL import Image, ImageOps
 import gzip,cPickle
 
+"""Script to preprocess the Chinese character dataset, needs folder hwdb1.1train with all the gnt files from the CASIA website"""
+
 pickle_size = 10000
 size = 40
 samplenumber = 0

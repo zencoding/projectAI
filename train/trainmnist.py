@@ -4,15 +4,14 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
+"""This script trains an auto-encoder on the MNIST dataset and keeps track of the lowerbound"""
+
+#python -m train.trainmnist -s mnist.npy
+
 import aevb
-from data import load_mnist
 from loadsave import *
 import numpy as np
 import argparse
-
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
-import scipy.stats as sp
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--params", help="Specify param file", default = False)
@@ -58,7 +57,7 @@ if args.params:
 else:
     encoder.initParams()
     for i in xrange(0,10):
-            encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
+        encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
     lowerbound = np.array([])
     testlowerbound = np.array([])
 

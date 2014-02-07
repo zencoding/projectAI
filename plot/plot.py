@@ -5,6 +5,7 @@ import scipy.stats as sp
 import argparse
 
 def plot(params, num_pixels, continuous):
+	"""Creates a manifold for Frey Face and MNIST"""
     (W4,W5,b4,b5) = params
 
     height,width = num_pixels
@@ -31,6 +32,7 @@ def plot(params, num_pixels, continuous):
 
 
 def plot_accuracy(filename, title):
+	"""Function to plot lower bound"""
     acc_train = np.load(filename + '_train.npy')    
     acc_val = np.load(filename + '_val.npy')
     acc_test = np.load(filename + '_test.npy')

@@ -1,13 +1,19 @@
 import gzip,cPickle
-from data import load_chinese
-from collections import defaultdict
-import operator
 import numpy as np
 
+"""Script to create list of 50 classes and then obtain all characters of these classes"""
 
 classes = 50
 list_of_classes = []
-x_train, t_train = load_chinese(1)
+
+#Note load_chinese needs a folder with many pickles, as created by the readchinese.py script
+
+def load_chinese(file_id):
+    f = gzip.open('dataset/chinese'+str(file_id)+'pkl.gz','rb')
+    x_train, t_train = cPickle.load(f)
+    f.close()
+    return x_train,t_train
+
 i = 0
 while len(list_of_classes) < classes:
     if t_train[i] not in list_of_classes:

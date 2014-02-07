@@ -6,9 +6,10 @@ Otto Fabius - 5619858
 
 """A script for training an auto-encoder on a subset of the Chinese dataset"""
 
+#Example: python -m train.trainchinese -s chinese.npy
+
 import aevb
-from data import load_filtered_chinese
-from loadsave import load_notest, save_notest
+from loadsave import load_notest, save_notest,load_filtered_chinese
 import numpy as np
 import argparse
 
@@ -44,7 +45,6 @@ else:
     for i in xrange(0, 10):
         encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
     lowerbound = np.array([])
-    # testlowerbound = np.array([])
 
 for j in xrange(20000):
     print 'Iteration:', j
@@ -56,8 +56,3 @@ for j in xrange(20000):
     if args.save:
         print "Saving params"
         save_notest(args.save, encoder.params, encoder.h, lowerbound)
-
-# if j % 5 == 0:
-    # print "Saving test lowerbound"
-    # testlowerbound = np.append(testlowerbound, encoder.getLowerBound(x_test))
-
