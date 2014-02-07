@@ -130,7 +130,7 @@ In the remainder of the experiments, we will focus on one useful application of 
 
 \subsubsection{Classifying MNIST on features}
 
-In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0\cdot 10^7$ training examples, and reached a lower bound of $-101.53$ on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5\cdot 10^7$ training examples from the MNIST training set. This yielded the same results as $0.5\cdot 10^7$ training examples and thus was enough iterations for convergence.\\
+In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0\cdot 10^7$ training examples, and reached a lower bound of $-101.53$ on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5\cdot 10^7$ training examples from the MNIST training set. This yielded the same results as $0.5\cdot 10^7$ training examples and thus was enough iterations for convergence. This auto-encoder is used in several experiments later. \\
 Logistic regression was run until results on the validation set declined or stabilized. The results are shown in Table 1.
 
 \begin{table}
@@ -165,7 +165,7 @@ It is not obvious whether this indicates whether the learned features are less e
 
 \subsubsection{Classification on Small Datasets}
 
-In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of learned features for improving the classification results for small subsets of MNIST. Once again, logistic regression is our classification method of choice. In addition to features calculated with the auto-encoder trained earlier (see Figure 1), a two-layer auto-encoder was trained with SGVB. This was done by stacking another auto-encoder on top of the first auto-encoder. This was done simply by using the features, computed by the first auto-encoder, as input for SGD to train a new auto-encoder as before. Since the values of these computed features are continuous, as opposed to the pixel data, the second auto-encoder was trained to approximate Gaussian distribution instead of a Bernoulli distribution, as discussed earlier. For the second auto-encoder, once again 400 hidden units and latent dimensionality of 20 were chosen to be able to compare the results. The resulting features for the two-layer autoencoder are then computed through the formula $formule toevoegen$.\\ 
+In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of learned features for improving the classification results for small subsets of MNIST. Once again, logistic regression is our classification method of choice. In addition to features calculated with the auto-encoder trained earlier (see Figure 1), a two-layer auto-encoder was trained with SGVB. This was done by stacking another auto-encoder on top of the first auto-encoder. This was done simply by using the features, computed by the first auto-encoder, as input for SGD to train a new auto-encoder as before. Since the values of these computed features are continuous, as opposed to the pixel data, the second auto-encoder was trained to approximate Gaussian distribution instead of a Bernoulli distribution, as discussed earlier. For the second auto-encoder, once again 400 hidden units and latent dimensionality of 20 were chosen to be able to compare the results. The resulting features for the two-layer auto-encoder are then computed through the formula $formule toevoegen$.\\ 
 In our experiment, we selected the first $x$ training examples from the training set of MNIST as our training set, where $x$ started at 4 and was increased each time by multiplying it with 2, up to a size of 2048. To evaluate the results for each dataset size, we used the first 1000 data points of the MNIST test set and validation set, respectively.\\
 Figure 6 shows the accuracy on the test set after training logistic regression on the first $x$ data points of MNIST until accuracy on the validation set converged. The results show that training on the features computed with the one-layer auto-encoder yield better results across the whole range of used dataset sizes, in addition to using the full dataset (see 3.2.1). The two-layer auto-encoder shows an additional boost in performance for dataset sizes of up to 64 total datapoints, but is less effective for larger datasets. \\
 
@@ -181,7 +181,32 @@ These results show that also for small datasets, unsupervised learning with SGVB
 \subsection{Generalizability of Features}
 
 One of the advantages of extracting a set of relevant features of data, in general, is that performing classification on these features is more robust to overfitting than performing classifications on the original data.  In this subsection, we detail an experiment designed to test the extent to whether this general property of features is applicable to the feature representation generated with the trained auto-encoder described earlier.\\
-For this experiment, we chose a Support Vector Machine with a Radial Basis Function kernel as our classification method, since the susceptibility of this method to overfitting is easily manipulable by setting the precision of the RBF kernel. Too high values for this hyperparameter will lead to overfitting, while too low values will prevent overfitting, but at the cist of reducing the discriminative power (and thus, accuracy).\\
+We chose a Support Vector Machine with a Radial Basis Function kernel as our classification method, since the susceptibility of this method to overfitting is easily manipulable by setting the precision of the RBF kernel. Too high values for this hyperparameter will lead to overfitting, while too low values will prevent overfitting, but at the cost of reducing the discriminative power (and thus, accuracy). As the robustness to overfitting is particularly desirable when training on a small dataset, we trained a Support Vector Machine on small subsets of the training set of MNIST, as well as on the features extracted from the same data using the trained auto-encoder. Once again, we used the first 1000 examples from the MNIST test set to calculate the test accuracy.\\
+The achieved train and test set accuracy across different dataset sizes are shown for different settings of the precision of the RBF kernel in Figure 7. It is clearly visible that for larger precision, classifying on pixel values is heavily outperformed by using the kearned features. Using the features yields acceptable results even whith $\gamma = 0.3$, where this leads to such severe overfitting on the pixel values that the resulting classifier barely performs better than random on the test set.\\
+These results clearly demonstrate the robustness to overfitting that comes from learning a feature representation of data. This further improves the utility of SGVB as a method to improve classification algorithms, especially when annotated data is scarce. Presumably, these results are compounded when higher-level features are extracted from the data. Once higher-level features have been extracted effectively with SGVB, this experiment can be repeated to investigate this further.
+
+
+
+\begin{figure}[htb]
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{svm001.png}
+\end{minipage}%
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{svm003.png}
+\end{minipage}\\
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{svm01.png}
+\end{minipage}%
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{svm03.png}
+\end{minipage}
+\caption{Results of classification on MNIST with a SVM with RBF kernel. Precision of the RBF kernel (Gamma) is set to different values, as denoted above each plot.}
+\end{figure}
+
 
 \section*{Conclusion}
 
