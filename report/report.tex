@@ -16,13 +16,11 @@
 	}
 \maketitle
 
-\begin{abstract}
-In this paper, we implement and experiment with an auto-encoder trained with Stochastic Gradient VB \cite{kingma2013auto}. For each dataset, we learn the parameters for both an encoder and a decoder, implemented as two-layer neural networks, allowing for encoding data of the same type and generating new datapoints from (calculated or sampled) hidden representations. We use learned auto-encoders for generating new data and use the extracted features for classification. Several results from \cite{kingma2013auto} were reproduced and the results further show that the learned features generally improve classification accuracy.
-\end{abstract}
-
 \section{Introduction}
 
-Recently Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, in this report we describe the novelty that is introduced and look at several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is more robust to overfitting. 
+In Machine Learning, it is often useful to model data as being generated from some underlying process, or hidden variables, according to some parametrized model. A powerful way to determine these parameters and latent variables (commonly grouped together as "unobserved variables") is to perform Bayesian Inference in order to obtain the MAP estimate. The resulting integral is, however, intractable, and is in practice approximated by a family of techniques known as Variational Bayes. These techniques have various drawbacks such as limited scalability or limited performance. \\
+%referenties!
+Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, where they present a new Variational Bayesian method, of which experimental results show it to be a large improvement over existing methods. In this report, we describe the novelty that is introduced and investigate several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is more robust to overfitting. 
 
 \section{AEVB}
 
@@ -165,7 +163,7 @@ Logistic regression on the pixel values yielded a test set accuracy of 66.29\%, 
 It is not obvious whether this indicates whether the learned features are less effective for this dataset than for MNIST. If so, one possible explanation is that the lower bound had not converged as much as the lower bound for MNIST (see Figure 1). Additional experiments, such as training the auto-encoder longer, training an RBM to extract features to classify on, and training on a larger part of the Chinese character dataset could provide more insight in the effectiveness on SGVB auto-encoders for use in classification in general and for the Chinese character dataset in particular.
 
 
-\subsubsection{Classification on small datasets}
+\subsubsection{Classification on Small Datasets}
 
 In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of learned features for improving the classification results for small subsets of MNIST. Once again, logistic regression is our classification method of choice. In addition to features calculated with the auto-encoder trained earlier (see Figure 1), a two-layer auto-encoder was trained with SGVB. This was done by stacking another auto-encoder on top of the first auto-encoder. This was done simply by using the features, computed by the first auto-encoder, as input for SGD to train a new auto-encoder as before. Since the values of these computed features are continuous, as opposed to the pixel data, the second auto-encoder was trained to approximate Gaussian distribution instead of a Bernoulli distribution, as discussed earlier. For the second auto-encoder, once again 400 hidden units and latent dimensionality of 20 were chosen to be able to compare the results. The resulting features for the two-layer autoencoder are then computed through the formula $formule toevoegen$.\\ 
 In our experiment, we selected the first $x$ training examples from the training set of MNIST as our training set, where $x$ started at 4 and was increased each time by multiplying it with 2, up to a size of 2048. To evaluate the results for each dataset size, we used the first 1000 data points of the MNIST test set and validation set, respectively.\\
@@ -180,9 +178,10 @@ Figure 6 shows the accuracy on the test set after training logistic regression o
 
 These results show that also for small datasets, unsupervised learning with SGVB auto-encoders can increase the effectiveness of classification algorithms. As in logistic regression on the full dataset, the resulting two- and three-layer MLPs were not trained as a whole on supervised data. Also, the layers of the two-layer auto-encoder were trained independently, while jointly training all the parameters could fine tune the parameters to obtain better features. These possibilities can be explored further in future experiments. Also, training and effectively fine-tuning multilayer auto-encoders with SGVB seems very promising from these somewhat preliminary results. 
 
-\subsection{generalizability of features (of is "robustness to overfitting" beter?)}
+\subsection{Generalizability of Features}
 
-svm experimentjes
+One of the advantages of extracting a set of relevant features of data, in general, is that performing classification on these features is more robust to overfitting than performing classifications on the original data.  In this subsection, we detail an experiment designed to test the extent to whether this general property of features is applicable to the feature representation generated with the trained auto-encoder described earlier.\\
+For this experiment, we chose a Support Vector Machine with a Radial Basis Function kernel as our classification method, since the susceptibility of this method to overfitting is easily manipulable by setting the precision of the RBF kernel. Too high values for this hyperparameter will lead to overfitting, while too low values will prevent overfitting, but at the cist of reducing the discriminative power (and thus, accuracy).\\
 
 \section*{Conclusion}
 
@@ -193,6 +192,6 @@ For further research, it is interesting to use this auto-encoder as a building b
 
 \pagebreak 
 \bibliographystyle{amsplain}
-\bibliography{references}
+\bibliography{references.bib}
 
 \end{document}
