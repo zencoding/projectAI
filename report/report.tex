@@ -24,7 +24,7 @@ Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 201
 
 \section{Stochastic Gradient Variational Bayes}
 
-\subsection*{Problem class}
+\subsection{Problem class}
 
 The problem class associated with AEVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the posterior probability over $\mathbf{X}$ by reformulating Bayes' Rule:
 
@@ -234,8 +234,8 @@ In these two histograms it can clearly be seen that around 20 dimensions have a 
 
 In our experiments, we found that the results as described by \cite{kingma2013auto} are indeed reproducible by implementing the theory as laid out in the paper. We also conclude that performing classification on the features learned by the auto-encoder gives a higher score for MNIST as well as Chinese characters. Notably, the boost in performance is higher than what was achievable with RBMs. Another conclusion we can draw from our results is that training on features of the auto-encoder is more robust to overfitting. 
 
-For further research, there are several interesting opportunities. First, we have already shown that it is possible to beat the current state-of-the-art on simple classifications problems with simple classification methods. It would be interesting to find out how the variational auto-encoder performs on more complicated problems and with more complicated classification methods. Second, several common applications of auto-encoders, such as denoising and superpixeling, are not tested yet. Last, the auto-encoder could be used as a building block in a deep neural network, replacing RBMs. Given the theoretical advantages of the variational auto-encoder and the shown improved results, it is possible that this will perform better than the current state-of-the-art.
-
+The results presented are encouraging for further research on using SGVB auto-encoders for classification, but also for other tasks. It would be interesting to find out how the variational auto-encoder performs on more complicated problems and with more complicated classification methods. Also, extracting higher level features from data through constructing deeper and otherwise more complex architectures, and fine-tuning these networks as a whole, is a viable extension to the current work. Given the theoretical advantages of the variational auto-encoder over RBM's and the shown improved results, it is possible that this will perform better than the current state-of-the-art techniques. Moeover, constructed auto-encoders of course have more applications than classification, such as denoising and superpixeling, which we have not yet investigated. \\ 
+Of course, auto-encoders are only one area of application for SGVB, and not only will other known areas of application of Variational Bayes be investigated further, but no doubt new areas of application will arise in the future.
 
 \pagebreak 
 \nocite{*}
