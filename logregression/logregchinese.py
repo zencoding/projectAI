@@ -6,7 +6,7 @@ Otto Fabius - 5619858
 
 import numpy as np
 from log_regression import *
-from data import load_filtered_chinese
+from loadsave import load_filtered_chinese
 import cPickle
 
 import argparse
