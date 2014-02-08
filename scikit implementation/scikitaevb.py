@@ -77,7 +77,7 @@ class AEVB:
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.n_iter = n_iter
-        self.sampling_rounds = sampling_steps
+        self.sampling_rounds = sampling_rounds
         self.verbose = verbose
 
         self.continuous = continuous
@@ -91,28 +91,31 @@ class AEVB:
             The dimensionality of the input data X
         """
         sigmaInit = 0.01
-        W1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,dimX))
-        b1 = np.random.normal(0,self.sigmaInit,(self.n_components_encoder,1))
+        W1 = np.random.normal(0,sigmaInit,(self.n_components_encoder,dimX))
+        b1 = np.random.normal(0,sigmaInit,(self.n_components_encoder,1))
 
-        W2 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
-        b2 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,1))
+        W2 = np.random.normal(0,sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
+        b2 = np.random.normal(0,sigmaInit,(self.n_hidden_variables,1))
 
-        W3 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
-        b3 = np.random.normal(0,self.sigmaInit,(self.n_hidden_variables,1))
+        W3 = np.random.normal(0,sigmaInit,(self.n_hidden_variables,self.n_components_encoder))
+        b3 = np.random.normal(0,sigmaInit,(self.n_hidden_variables,1))
         
-        W4 = np.random.normal(0,self.sigmaInit,(self.n_components_decoder,self.n_hidden_variables))
-        b4 = np.random.normal(0,self.sigmaInit,(self.n_components_decoder,1))
+        W4 = np.random.normal(0,sigmaInit,(self.n_components_decoder,self.n_hidden_variables))
+        b4 = np.random.normal(0,sigmaInit,(self.n_components_decoder,1))
 
-        W5 = np.random.normal(0,self.sigmaInit,(dimX,self.n_components_decoder))
-        b5 = np.random.normal(0,self.sigmaInit,(dimX,1))
+        W5 = np.random.normal(0,sigmaInit,(dimX,self.n_components_decoder))
+        b5 = np.random.normal(0,sigmaInit,(dimX,1))
 
-        self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
         if self.continuous:
-            W6 = np.random.normal(0,self.sigmaInit,(dimX,self.n_components_decoder))
-            b6 = np.random.normal(0,self.sigmaInit,(dimX,1))
+            W6 = np.random.normal(0,sigmaInit,(dimX,self.n_components_decoder))
+            b6 = np.random.normal(0,sigmaInit,(dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
+        else:
+            self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
 
-    def _initH(self,miniBatch):
+        self.h = [0.01] * len(self.params)
+
+    def _initH(self,miniBatch,gradientfunction):
         """Initialize H for AdaGrad
 
         Parameters
@@ -121,8 +124,7 @@ class AEVB:
         miniBatch: array-like, shape (batch_size, n_features)
             The data to use for computing gradients
         """
-        self.h = [0.01] * len(self.params)
-        totalGradients = self.getGradients(miniBatch)
+        totalGradients,lowerbound = self._getGradients(miniBatch,gradientfunction)
         for i in xrange(len(totalGradients)):
             self.h[i] += totalGradients[i]*totalGradients[i]
 
@@ -190,9 +192,9 @@ class AEVB:
 
     def _getGradients(self,miniBatch,gradientfunction):
         totalGradients = [0] * len(self.params)
-        for l in xrange(self.L):
-            e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
-            gradients = gradientfunction(*(self.params),x=miniBatch,eps=e)
+        for l in xrange(self.sampling_rounds):
+            e = np.random.normal(0,1,[self.n_hidden_variables,miniBatch.shape[0]])
+            gradients = gradientfunction(*(self.params),x=miniBatch.T,eps=e)
 
             for i in xrange(len(self.params)):
                 if np.isnan(np.sum(gradients[i])):
@@ -213,27 +215,36 @@ class AEVB:
 
             self.params[i] += self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(current_batch_size/N))
 
-    def fit(self,data,iterations):
+    def fit(self,data):
         [N,dimX] = data.shape
-        self._initParams(self,dimX)
+        self._initParams(dimX)
         list_lowerbound = np.array([])
 
+        if self.verbose:
+            print "Creating gradient functions"
         (gradientfunction,lowerboundfunction) = self._createGradientFunctions()
 
         batches = np.arange(0,N,self.batch_size)
         if batches[-1] != N:
             batches = np.append(batches,N)
 
+        if self.verbose:
+            print "Initialize H"
         for i in xrange(10):
             miniBatch = data[batches[i]:batches[i+1]]
-            self._initH(self,miniBatch)
-        for i in xrange(iterations):
+            self._initH(miniBatch,gradientfunction)
+
+        for i in xrange(self.n_iter):
+            if self.verbose:
+                print "iteration:", i
             iteration_lowerbound = 0
             for j in xrange(0,len(batches)-2):
-                totalGradients,lowerbound = self._getGradients(miniBatch.T,gradientfunction)
+                totalGradients,lowerbound = self._getGradients(miniBatch,gradientfunction)
                 iteration_lowerbound += lowerbound
-                self._updateParams(totalGradients,N)
-            list_lowerbound = np.append(list_lowerbound,iteration_lowerbound)
+                self._updateParams(totalGradients,N,miniBatch.shape[0])
+            print iteration_lowerbound/N
+            list_lowerbound = np.append(list_lowerbound,iteration_lowerbound/N)
+        return list_lowerbound
 
     def transform(self,data):
         if self.continuous:
