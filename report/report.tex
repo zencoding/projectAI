@@ -20,7 +20,7 @@
 
 In Machine Learning, it is often useful to model data as being generated from some underlying process, or hidden variables, according to some parametrized model. A powerful way to determine these parameters and latent variables (commonly grouped together as "unobserved variables") is to perform Bayesian Inference in order to obtain the MAP estimate. The resulting integral is, however, intractable, and is in practice approximated by a family of techniques known as Variational Bayes. These techniques have various drawbacks such as limited scalability or limited performance. \\
 %referenties!
-Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, where they present a new Variational Bayesian method, of which experimental results show it to be a large improvement over existing methods. In this report, we describe the novelty that is introduced and investigate several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is more robust to overfitting. 
+Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, where they present a new Variational Bayesian method, of which experimental results show it to be effective and scalable to large datasets. In this report, we describe the novelty that is introduced and investigate several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is robust to overfitting. 
 
 \section{AEVB}
 
@@ -36,17 +36,7 @@ Where $P(X|Z)$ and $P(Z|X)$ are parameterized by $\theta$.
 \\
 
 Knowing the probability distributions $P(X|Z)$ and $P(Z|X)$, i.e. learning $\theta$, can sometimes provide information on some natural process (if one is interested in the values of the parameters, for example). But knowing the distribution $P(Z|X)$ also allows us to infer $\mathbf{Z}$ from $\mathbf{X}$ to reduce the dimensionality of (encode) our data and find structure in the data. Furthermore, introducing a prior $P(Z)$ allows for computing the marginal probability $P(X)$ to generate data for applications such as image inpainting, denoising and super-resolution.
-We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int \frac{P(Z)}{P(X|Z)}dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods. (possible e.g. variational linear regression, Bishop p. 486)
-
-
-
-
-
-%In the class of problems we are interested in, the following conditions apply:
-%\begin{itemize}
-%\item The posterior distribution $P(Z|X)$ is intractable. 
-%\item the probability density functions of the prior $P(Z)$ and the likelihood $P(X|Z)$, respectively, are differentiable w.r.t. $\mathbf{Z}$ and $\theta$. 
-%\end{itemize}
+We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int \frac{P(Z)}{P(X|Z)}dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods.
 
 \subsection{Sampling to obtain gradients}
 
