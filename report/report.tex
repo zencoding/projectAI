@@ -55,16 +55,23 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection{Modelling the conditional distributions}
-For our experiments, we approximate $P(X|Z)$ and $q(X|Z)$ as neural networks with a single hidden layer, similar to \cite{kingma2013auto}. These neural networks can be trained well with backpropagation of error derivatives. They are also powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. 
+For our experiments, we approximate the conditional distributions $P(X|Z)$ and $q(Z|X)$ with neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $P(\mathbf{z})$ from data point $\mathbf{x}$ is now done through
+\begin{align}
+\mathbf{\mu_z} = f_2(\mathbf{W}_2^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_2}) \\
+\mathbf{\sigma_z} = f_3(\mathbf{W}_3^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_3})
+\end{align} 
+Where $f_1$ through $f_3$ denote the activation functions.\\
+$P(X|Z)$ can be modeled in this way too if the data $\mathbf{X}$ is continuously valued. If the values are binary, it can be modeled by a multivariate Bernoulli distribution.  These neural networks are powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. They can be efficiently trained with backpropagation of error derivatives, especially if batch optimization is used. This is done by expanding $x$, $\mathbf{\mu_z}$ and $\mathbf{\sigma_z}$ to matrices to acquire gradients of multiple data points at once for one parameter update step.\\
+Training these two MLPs in such a fashion effectively creates an (variational) auto-encoder, where a hidden representation, or features, can be computed through the \textit{encoder} $P(\mathbf{z}|\mathbf{x})$ and data can be generated from a hidden representation $\mathbf{z}$ through the \textit{decoder} $q(\mathbf{x}|\mathbf{z})$
 
 \section{Auto-encoders}
 
-In the paper, Kingma and Welling implement an auto-encoder based on the reparametrization trick. Auto-encoders, or autoassociators as \cite{bengio2009learning} calls them, are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder learns much more interesting things.
+Before we dive into our experiments, let us first discuss Auto-Encoders, or autoassociators as \cite{bengio2009learning} calls them, in some more detail. Auto-Encoders are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder can learn a more powerful mapping.\\
+Auto-encoders are frequently used for dimensionality reduction. Also, feature extraction is a useful application. Extracting useful features from data is useful in different areas, one example being classification.
 
-An important application of auto-encoders, as \cite{bengio2009learning} describe, is as building blocks for a deep multi-layer neural network. An example of this application is to first train an auto-encoder on unlabeled data, then another auto-encoder is trained on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. The last step is to train a supervised neural network on the output of the stacked auto-encoder. The supervised criterion can then be used tune all the parameters of deep network. 
+An important application of auto-encoders, as \cite{bengio2009learning} describe, is as a first step in constructing deep multi-layer neural networks. An example of this application is to first train an auto-encoder on unlabeled data, then train another auto-encoder on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. This yields a deep network with good initialization of the weights, which can be fine-tuned through backpropagation of error derivatives. 
 
-However, for many classes of probabilistic models there is no tractable estimator for the log-likelihood. Therefore, in practice Restricted Boltzmann Machines are used as building blocks and the network is called a Deep Belief Network, as described in detail in \cite{hinton2006reducing}.
-
+However, for many classes of probabilistic models there is no tractable estimator for the log-likelihood. Therefore, in practice Restricted Boltzmann Machines are used as building blocks and the network is called a Deep Belief Network, as described in detail in \cite{hinton2006reducing}. SGVB auto-encoders could prove to be a viable, theoretically attractive alternative for RBMs, not only in this application, but in general.
 
 \section{Experiments}
 
@@ -203,10 +210,10 @@ These results clearly demonstrate the robustness to overfitting that comes from 
 \caption{Results of classification on MNIST with a SVM with RBF kernel. Precision of the RBF kernel (Gamma) is set to different values, as denoted above each plot.}
 \end{figure}
 
-\subsection{Regularization effect of the lower bound}
-Kingma and Welling \cite{kingma2013auto} claim that the lower bound has a regularizing effect on the usage of dimensions of Z. This would be a welcome property as it would not be necessary to tune this hyper-parameter. Furthermore, by inspecting the L2 norm of the weights during training it is possible to figure out which dimensions are not being `used'. With this information it becomes possible to prune these dimensions and save computations and time in future iterations.
+\subsection{Regularizing effect of the lower bound}
+Kingma and Welling \cite{kingma2013auto} claim that the lower bound has a regularizing effect. This regularization leads to weights along some hidden dimensions to become negligibly small (unused). This would be a welcome property as it would become unnecessary to tune this hyper-parameter. Furthermore, a practical advantage of this is that by inspecting the L2 norm of the weights during training, it is possible to monitor the relative influence of each dimension. This information can provide speed-ups by pruning the unused dimensions during training.
 
-We performed an experiment in which we trained an auto-encoder with a dimensionality of Z of 20 and 400, and 400 hidden units on MNIST. The results can be seen in the following figures:
+We performed an experiment in which we trained two auto-encoders with 400 hidden units on MNIST. One of these has an approximately appropriate hidden dimensionality of 20, the other one 400, which is too many for MNIST. A histogram of normalized size of the weights across different hidden dimensions is shown in Figure 8.
 
 \begin{figure}[htb]
     \centering
@@ -220,7 +227,7 @@ We performed an experiment in which we trained an auto-encoder with a dimensiona
     \caption{Sum of squares of the dimensions of W4 (weights for decoder)}
 \end{figure}
 
-In these two figures it can clearly be seen that around 20 dimensions is sufficient to encode the necessary information. Adding more dimensions will not substantially change the result as the weights of those dimensions are negligible.
+In these two histograms it can clearly be seen that around 20 dimensions have a significant size in both auto-encoders. Apparently, this is sufficient to encode information present in the MNIST data. The additional dimensions do not substantially change the result, as the weights of those dimensions are negligible.
 
 
 \section*{Conclusion}
