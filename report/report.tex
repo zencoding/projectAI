@@ -22,7 +22,7 @@ In Machine Learning, it is often useful to model data as being generated from so
 %referenties!
 Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, where they present a new Variational Bayesian method, of which experimental results show it to be effective and scalable to large datasets. In this report, we describe the novelty that is introduced and investigate several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is robust to overfitting. 
 
-\section{AEVB}
+\section{Stochastic Gradient Variational Bayes}
 
 \subsection*{Problem class}
 
@@ -123,7 +123,7 @@ These results achieved with our implementation of SGDVB auto-encoders are very s
 
 \subsection{Classification}
 
-In the remainder of the experiments, we will focus on one useful application of learned features, namely in classification. Before we use a classification method, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we aim to improve the results of classification (supervised learning) with SGDVB (unsupervised learning). In particular, we will examine the performance of logistic regression on various representations of the same dataset. Classifying on features calculated by a one-layer neural network effectively results in a two-layered MLP, of which the first layer is not trained with supervised learning after training it with SGDVB. We compare obtained results to those obtained when using features trained with a Restricted Bolzmann Machine, which is a popular method for such (??) feature extraction and is frequently used for weight initialization in layers of deep belief nets (e.g. \cite{bengio2007greedy} ).
+In the remainder of the experiments, we will focus on one useful application of learned features, namely in classification. Before we use a classification method, we can use a trained Auto-Encoder to extract features from the data by calculating the output of the hidden layer of the Auto-Encoder. This way, we aim to improve the results of classification (supervised learning) with SGDVB (unsupervised learning). In particular, we will examine the performance of logistic regression on various representations of the same dataset. Classifying on features calculated by a one-layer neural network effectively results in a two-layered MLP, of which the first layer is not trained with supervised learning after training it with SGDVB. We compare obtained results to those obtained when using features trained with a Restricted Bolzmann Machine, which is a popular method \cite{bengio2009learning} for such feature extraction and is frequently used for weight initialization in layers of deep belief nets (e.g. \cite{bengio2007greedy} ).
 
 \subsubsection{Classifying MNIST on features}
 
@@ -135,7 +135,7 @@ Logistic regression was run until results on the validation set declined or stab
 \hline
 & Raw Data & SGVB AE Features & RBM Features \\ \hline
 No. of training examples until convergence ($\cdot 10^6$) & 1.5 & 4.0 & 3.0 \\ \hline 
-Test set accuracy & 93.36 & 97.54 & 96.29
+Test set accuracy & 93.36 & 97.54 & 96.29 \\ \hline
 \end{tabular}
 \end{table}
 
@@ -207,7 +207,7 @@ These results clearly demonstrate the robustness to overfitting that comes from 
 \begin{minipage}{0.36\textwidth}
 \includegraphics[height=2in,width=2.5in]{svm03.png}
 \end{minipage}
-\caption{Results of classification on MNIST with a SVM with RBF kernel. Precision of the RBF kernel (Gamma) is set to different values, as denoted above each plot.}
+\caption{Results of classification on MNIST with a SVM with RBF kernel. Precision of the RBF kernel ($\gamma$) is set to different values, as denoted above each plot.}
 \end{figure}
 
 \subsection{Regularizing effect of the lower bound}
@@ -238,6 +238,7 @@ For further research, there are several interesting opportunities. First, we hav
 
 
 \pagebreak 
+\nocite{*}
 \bibliographystyle{amsplain}
 \bibliography{references.bib}
 
