@@ -10,6 +10,7 @@ Otto Fabius - 5619858
 
 import scikitaevb
 import numpy as np
+import cPickle
 
 print "Loading data"
 f = open('dataset/freyfaces.pkl','rb')

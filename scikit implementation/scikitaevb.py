@@ -5,8 +5,7 @@ Otto Fabius - 5619858
 """
 
 import numpy as np
-import theano as th
-import theano.tensor as T
+
 
 class AEVB:
     """Auto-encoding variational Bayes (AEVB).
@@ -82,6 +81,7 @@ class AEVB:
 
         self.continuous = continuous
 
+
     def _initParams(self,dimX):
         """Create all weight and bias parameters with the right dimensions
 
@@ -111,11 +111,13 @@ class AEVB:
             b6 = np.random.normal(0,sigmaInit,(dimX,1))
             self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
         else:
-            self.params = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
+            self.params = {"W1": W1, "W2" : W2, "W3": W3, "W4":W4, "W5": W5, "b1": b1, "b2": b2, "b3": b3, "b4": b4, "b5": b5}
 
-        self.h = [0.01] * len(self.params)
+        self.h = dict()
+        for key in self.params:
+            self.h[key] = 0.01
 
-    def _initH(self,miniBatch,gradientfunction):
+    def _initH(self,miniBatch):
         """Initialize H for AdaGrad
 
         Parameters
@@ -124,56 +126,94 @@ class AEVB:
         miniBatch: array-like, shape (batch_size, n_features)
             The data to use for computing gradients
         """
-        totalGradients,lowerbound = self._getGradients(miniBatch,gradientfunction)
-        for i in xrange(len(totalGradients)):
-            self.h[i] += totalGradients[i]*totalGradients[i]
 
-    def _createGradientFunctions(self):
-        #Create the Theano variables
-        W1,W2,W3,W4,W5,W6,x,eps = T.dmatrices("W1","W2","W3","W4","W5","W6","x","eps")
+        e = np.random.normal(0,1,[self.n_hidden_variables,miniBatch.shape[0]])
+        gradients,lowerbound = self._computeGradients(miniBatch.T,e)
+        for key in gradients:
+            self.h[key] += totalGradients[key]**2
 
-        #Create biases as cols so they can be broadcasted for minibatches
-        b1,b2,b3,b4,b5,b6 = T.dcols("b1","b2","b3","b4","b5","b6")
+    def _computeGradients(self,x,eps):
+        W1, W2, W3, W4, W5 = self.params["W1"], self.params["W2"], self.params["W3"], self.params["W4"], self.params["W5"]
+        b1, b2, b3, b4, b5 = self.params["b1"], self.params["b2"], self.params["b3"], self.params["b4"], self.params["b5"]
 
-        if self.continuous:
-            h_encoder = T.nnet.softplus(T.dot(W1,x) + b1)
-        else:   
-            h_encoder = T.tanh(T.dot(W1,x) + b1)
+        sigmoid = lambda x: 1/1+np.exp(-x)
 
-        mu_encoder = T.dot(W2,h_encoder) + b2
-        log_sigma_encoder = 0.5*(T.dot(W3,h_encoder) + b3)
+        h_encoder = np.tanh(W1.dot(x) + b1)
+        mu_encoder = W2.dot(h_encoder) + b2
+        log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
 
-        #Find the hidden variable z
-        z = mu_encoder + T.exp(log_sigma_encoder)*eps
+        z = mu_encoder + np.exp(log_sigma_encoder)*eps
 
-        #Set up decoding layer
-        if self.continuous:
-            h_decoder = T.nnet.softplus(T.dot(W4,z) + b4)
-            mu_decoder = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
-            log_sigma_decoder = 0.5*(T.dot(W6,h_decoder) + b6)
-            logpxz = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_decoder) - 0.5 * ((x - mu_decoder) / T.exp(log_sigma_decoder))**2)
-            rest = 0.5* T.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - T.exp(2*log_sigma_encoder) )
-            logp = logpxz + rest
-            gradvariables = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
-        else:
-            h_decoder = T.tanh(T.dot(W4,z) + b4)
-            y = T.nnet.sigmoid(T.dot(W5,h_decoder) + b5)
-            logpxz = -T.nnet.binary_crossentropy(y,x).sum()
-            logqzx = T.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/T.exp(log_sigma_encoder))**2)
-            logpz = T.sum(-0.5*(z**2) - 0.5 * np.log(2 * np.pi))
-            logp = logpxz + logpz - logqzx
-            gradvariables = [W1,W2,W3,W4,W5,b1,b2,b3,b4,b5]
+        h_decoder = np.tanh(W4.dot(z) + b4)
 
-        #Compute all the gradients
-        derivatives = T.grad(logp,gradvariables)
+        y = sigmoid(W5.dot(h_decoder) + b5)
 
-        #Add the lowerbound so we can keep track of results
-        derivatives.append(logp)
 
-        gradientfunction = th.function(gradvariables + [x,eps], derivatives, on_unused_input='ignore')
-        lowerboundfunction = th.function(gradvariables + [x,eps], logp, on_unused_input='ignore')
+        dp_dy = sum(sum(x/y - (x - 1)/(y - 1)))
 
-        return (gradientfunction,lowerboundfunction)
+        dHd_dz = -W4.T.dot(np.tanh(W4.dot(z) + b4)**2 - 1)
+        dy_dHd = W5.T.dot(sigmoid(W5.dot(h_decoder) - b5) * (1 - sigmoid(W5.dot(h_decoder) - b5)))
+
+        dz_dmue = 1
+        dz_dlogsige = eps * np.exp(log_sigma_encoder)
+        dmue_dHe = W2
+        dlogsige_dHe = 0.5 * W3
+
+        #Add h_decoder transposed at end
+        dp_dW5 = dp_dy * (sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T)
+        dp_db5 = dp_dy * -sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
+
+        dp_dHd = dp_dy * dy_dHd
+
+        print W4.shape, z.shape, dp_dHd.shape
+        dp_dW4 = dp_dHd.dot(-z * (np.tanh(W4.dot(z) + b4)**2 - 1))
+        print b4.shape, dp_dHd.shape, W4.shape, z.shape
+        dp_db4 = dp_dHd.dot(1 - np.tanh(W4.dot(z) + b4)**2)
+
+        dp_dz = dp_dHd.dot(dHd_dz)
+
+        dp_dmue = dp_dz.dot(dz_dmue)
+
+        dp_dW2 = dp_dmue.dot(h_encoder)
+        dp_db2 = dp_dmue.dot(1)
+
+        #Part one of z
+        dz_dHe = dz_dmue.dot(dmue_dHe)
+        dz_dW1 = dz_dHe.dot(-x * (np.tanh(W1.dot(x) + b1)**2 - 1))
+        dz_db1 = dz_dHe.dot(1 - np.tanh(W1.dot(x) + b1)^2)
+
+
+        dp_dlogsige = dp_dz.dot(dz_dlogsige)
+
+        dp_dW3 = dp_dlogsige.dot(0.5*h_decoder)
+        dp_db3 = dp_dlogsige.dot(0.5)
+
+        #Part two of z 
+        dhd_dHe_2 = dz_dlogsige.dot(dmue_dHe)
+        dz_dW1_2 = dz_dHe_2.dot(-x * (np.tanh(W1.dot(x) + b1)**2 - 1))
+        dz_db1_2 = dz_dHe_2.dot(1 - np.tanh(W1.dot(x) + b1)^2)
+
+
+        dp_dW1 = dp_dz.dot(dz_dW1 + dz_dW1_2)
+        dp_db1 = dp_dz.dot(dz_db1 + dz_db1_2)
+
+        return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
+        "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}
+        
+
+    def _computeLB(self,data, eps):
+        sigmoid = lambda x: 1/1+np.exp(-x)
+        h_encoder = np.tanh(W1.dot(x) + b1)
+        mu_encoder = W2.dot(h_encoder) + b2
+        log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
+
+        z = mu_encoder + np.exp(log_sigma_encoder)*eps
+
+        logqzx = sum(sum(-(0.5 * log(2 * pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/exp(log_sigma_encoder))^2));
+        logpz = sum(sum(-0.5*(z^2) - 0.5 * log(2 * pi)));
+        logp = logpxz + logpz - logqzx;
+
+        return logp
 
     def _getLowerBound(self,data):
         lowerbound = 0
@@ -185,44 +225,39 @@ class AEVB:
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
             e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[0]])
-            lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch.T,eps=e)
+            lowerbound += self._computeLB(data,eps)
 
             return lowerbound/N
 
 
-    def _getGradients(self,miniBatch,gradientfunction):
-        totalGradients = [0] * len(self.params)
+    def _updateParams(self,minibatch,N):
         for l in xrange(self.sampling_rounds):
             e = np.random.normal(0,1,[self.n_hidden_variables,miniBatch.shape[0]])
-            gradients = gradientfunction(*(self.params),x=miniBatch.T,eps=e)
+            gradients = self._computeGradients(miniBatch.T,eps)
 
-            for i in xrange(len(self.params)):
-                if np.isnan(np.sum(gradients[i])):
-                    print "The gradients contain nans, that cannot be right"
-                    exit()
+            if not total_gradients:
+                total_gradients = gradients
+            else:
+                for key in gradients:
+                    if np.isnan(gradients[key]):
+                        print "The gradient " + key + " contain nans, that cannot be right"
+                        exit()
 
-                totalGradients[i] += gradients[i]
+                    totalGradients[key] += gradients[key]
 
-        return (totalGradients,gradients[-1])
-
-    def _updateParams(self,totalGradients,N,current_batch_size):
-        for i in xrange(len(self.params)):
-            self.h[i] += totalGradients[i]*totalGradients[i]
-            if i < 5 or (i < 6 and len(self.params) == 12):
-                prior = 0.5*self.params[i]
+        for key in self.params:
+            self.h[key] += totalGradients[key]**2
+            if "W" in key:
+                prior = 0.5*self.params[key]
             else:
                 prior = 0
 
-            self.params[i] += self.learning_rate/np.sqrt(self.h[i]) * (totalGradients[i] - prior*(current_batch_size/N))
+            self.params[key] += self.learning_rate/np.sqrt(self.h[key]) * (totalGradients[key] - prior*(minibatch.shape[0]/N))
 
     def fit(self,data):
         [N,dimX] = data.shape
         self._initParams(dimX)
         list_lowerbound = np.array([])
-
-        if self.verbose:
-            print "Creating gradient functions"
-        (gradientfunction,lowerboundfunction) = self._createGradientFunctions()
 
         batches = np.arange(0,N,self.batch_size)
         if batches[-1] != N:
@@ -232,25 +267,24 @@ class AEVB:
             print "Initialize H"
         for i in xrange(10):
             miniBatch = data[batches[i]:batches[i+1]]
-            self._initH(miniBatch,gradientfunction)
+            self._initH(miniBatch)
 
         for i in xrange(self.n_iter):
             if self.verbose:
                 print "iteration:", i
-            iteration_lowerbound = 0
+            # iteration_lowerbound = 0
             for j in xrange(0,len(batches)-2):
-                totalGradients,lowerbound = self._getGradients(miniBatch,gradientfunction)
-                iteration_lowerbound += lowerbound
-                self._updateParams(totalGradients,N,miniBatch.shape[0])
-            print iteration_lowerbound/N
-            list_lowerbound = np.append(list_lowerbound,iteration_lowerbound/N)
-        return list_lowerbound
+                # iteration_lowerbound += lowerbound
+                self._updateParams(miniBatch, N)
+            # print iteration_lowerbound/N
+            # list_lowerbound = np.append(list_lowerbound,iteration_lowerbound/N)
+        # return list_lowerbound
 
     def transform(self,data):
         if self.continuous:
-            return np.log(1+np.exp(data.dot(self.params[0].T) + params[6].T))
+            return np.log(1+np.exp(data.dot(self.params["W1"].T) + params["b1"].T))
         else:
-            return np.tanh(data.dot(self.params[0].T) + self.params[5].T)
+            return np.tanh(data.dot(self.params["W1"].T) + self.params["b1"].T)
 
     def fit_transform(self,data,iterations):
         self.fit(data.iterations)
