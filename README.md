@@ -16,11 +16,15 @@ There are three methods necessary to use:
 	
 * getLowerbound(data), for specifically obtaining a lowerbound of the log likelihood. Example use is for obtaining lowerbound for test set.
 
+###Scikit implementation
+In the scikit implementation folder there is a version of the auto encoder following the guidelines of Scikit Learn. There is also an accompanying script showing how it works.
+
+
 ##Datasets
 
 ####Chinese characters
 
-The CASIA Offline Chinese Handwriting Database available from [here](http://www.nlpr.ia.ac.cn/databases/handwriting/Home.html)
+The CASIA Offline Chinese Handwriting Database is available from [here](http://www.nlpr.ia.ac.cn/databases/handwriting/Home.html)
 
 The scripts to read in the .gnt files and preprocess them are available in the file [readchinese.py](chinese/readchinese.py). The size of the output can be set inside this script, also binarization can be toggled.
 
