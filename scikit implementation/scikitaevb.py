@@ -145,55 +145,71 @@ class AEVB:
         z = mu_encoder + np.exp(log_sigma_encoder)*eps
 
         h_decoder = np.tanh(W4.dot(z) + b4)
-
         y = sigmoid(W5.dot(h_decoder) + b5)
 
+        #z: 20x100
+        #W1: 400x784
+        #W2: 20x400
+        #W3: 20x400
+        #W4: 400x20
+        #W5: 784x400
+        #h_encoder: 400x100
 
-        dp_dy = sum(sum(x/y - (x - 1)/(y - 1)))
-
-        dHd_dz = -W4.T.dot(np.tanh(W4.dot(z) + b4)**2 - 1)
-        dy_dHd = W5.T.dot(sigmoid(W5.dot(h_decoder) - b5) * (1 - sigmoid(W5.dot(h_decoder) - b5)))
-
+        #784x100
+        #1x1
+        dp_dy = np.sum((x/y - (x - 1)/(y - 1)), keepdims=True)
+        #400x100
+        dy_dHd = W5.T.dot(sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5)))
+        #100x20
+        dHd_dz = -(np.tanh(W4.dot(z) + b4)**2 - 1).T.dot(W4)
+        #1x1
         dz_dmue = 1
+        #20x100
         dz_dlogsige = eps * np.exp(log_sigma_encoder)
+        #400x20
         dmue_dHe = W2
-        dlogsige_dHe = 0.5 * W3
+        #400x20
+        dlogsige_dHe = (0.5 * W3).T
 
         #Add h_decoder transposed at end
-        dp_dW5 = dp_dy * (sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T)
-        dp_db5 = dp_dy * -sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
+        dp_dW5 = dp_dy * ((sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T))
+        dp_db5 = dp_dy * sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
+        print dp_dW5.shape, W5.shape
+        print dp_db5.shape, b5.shape #need to sum here?
 
         dp_dHd = dp_dy * dy_dHd
-
-        print W4.shape, z.shape, dp_dHd.shape
-        dp_dW4 = dp_dHd.dot(-z * (np.tanh(W4.dot(z) + b4)**2 - 1))
-        print b4.shape, dp_dHd.shape, W4.shape, z.shape
-        dp_db4 = dp_dHd.dot(1 - np.tanh(W4.dot(z) + b4)**2)
+        
+        #Here suddenly need element wise with broadcasting, INCOSISTENT AAAAAH
+        dp_dW4 = np.sum(dp_dHd, axis=1,keepdims=True)*(-(np.tanh(W4.dot(z) + b4)**2 - 1).dot(z.T))
+        dp_db4 = np.sum(dp_dHd*(1 - np.tanh(W4.dot(z) + b4)**2),1,keepdims = True)
+        print W4.shape,dp_dW4.shape
+        print b4.shape,dp_db4.shape
 
         dp_dz = dp_dHd.dot(dHd_dz)
 
-        dp_dmue = dp_dz.dot(dz_dmue)
+        #dz_dmue is 1
+        dp_dmue = dp_dz.dot(1)
 
-        dp_dW2 = dp_dmue.dot(h_encoder)
-        dp_db2 = dp_dmue.dot(1)
+        dp_dW2 = dp_dmue * np.sum(h_encoder,axis=1,keepdims=True)
+        #dmue_db2 is 1
+        dp_db2 = dp_dmue
 
-        #Part one of z
-        dz_dHe = dz_dmue.dot(dmue_dHe)
-        dz_dW1 = dz_dHe.dot(-x * (np.tanh(W1.dot(x) + b1)**2 - 1))
-        dz_db1 = dz_dHe.dot(1 - np.tanh(W1.dot(x) + b1)^2)
-
+        #Part one of z, dz_dmue is 1
+        dz_dHe = dmue_dHe
+        dz_dW1 = dz_dHe.dot(-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
+        dz_db1 = dz_dHe.dot(1 - np.tanh(W1.dot(x) + b1)**2)
 
         dp_dlogsige = dp_dz.dot(dz_dlogsige)
 
-        dp_dW3 = dp_dlogsige.dot(0.5*h_decoder)
+        dp_dW3 = dp_dlogsige * np.sum(0.5 * h_decoder, axis=1,keepdims=True)
         dp_db3 = dp_dlogsige.dot(0.5)
 
         #Part two of z 
-        dhd_dHe_2 = dz_dlogsige.dot(dmue_dHe)
-        dz_dW1_2 = dz_dHe_2.dot(-x * (np.tanh(W1.dot(x) + b1)**2 - 1))
-        dz_db1_2 = dz_dHe_2.dot(1 - np.tanh(W1.dot(x) + b1)^2)
+        dhd_dHe_2 = dz_dlogsige.T.dot(dmue_dHe)
+        dz_dW1_2 = dhd_dHe_2.dot(-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
+        dz_db1_2 = dhd_dHe_2.dot(1 - np.tanh(W1.dot(x) + b1)**2)
 
-
+        #weird dimension mismatch, there is something really wrong
         dp_dW1 = dp_dz.dot(dz_dW1 + dz_dW1_2)
         dp_db1 = dp_dz.dot(dz_db1 + dz_db1_2)
 
