@@ -142,142 +142,95 @@ class AEVB:
         h_encoder = np.tanh(W1.dot(x) + b1)
         mu_encoder = W2.dot(h_encoder) + b2
         log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
-
         z = mu_encoder + np.exp(log_sigma_encoder)*eps
 
         h_decoder = np.tanh(W4.dot(z) + b4)
         y = sigmoid(W5.dot(h_decoder) + b5)
 
+        #Calculate lowerbound probability
         logpxz = np.sum(x * np.log(y) + (1 - x) * np.log(1-y))
         KLD = 0.5 * np.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - np.exp(2*log_sigma_encoder)) 
         logp = logpxz + KLD
 
-        #now sum over batch
+        #now sum over batch where possible
         h_encoder = np.sum(h_encoder,1,keepdims=True)
         h_decoder = np.sum(h_decoder,1,keepdims=True)
         z = np.sum(z,1,keepdims=True)
+        mu_encoder = np.mean(mu_encoder,1,keepdims=True)
         #log_sigma_encoder staat nu later, maar kan evt hier. y staat ook later want we willen x niet middelen (toch?)
 
-        #z: 20x1
-        #W1: 400x784
-        #W2: 20x400
-        #W3: 20x400
-        #W4: 400x20
-        #W5: 784x400
-        #h_encoder: 400x1
-
-        #784x100
-        #784x1
         dp_dy = np.sum((x/y - (x - 1)/(y - 1)),1, keepdims=True)
-        #784x400
+        #y = np.sum(y,1,keepdims=True)
         dy_dHd = np.multiply(W5,(sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))))
-        #400x20
         dHd_dz = np.multiply(-(np.tanh(W4.dot(z) + b4)**2 - 1),W4)
-        #20x1
         dz_dmue = np.ones_like(z)
-        #20x1
         #kunnen we niet net zo goed 1 keer noise samplen met kleinere variantie??
         dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
-        #20x400
         dmue_dHe = W2
-        #20x400
         dlogsige_dHe = (0.5 * W3)
+        dy_dW5 = (sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T)
+        dy_db5 = sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
+        dp_dW5 = dp_dy * dy_dW5
+        dp_db5 = dp_dy * dy_db5
+        dmue_dW2 = h_encoder.T*(np.ones_like(W2))
+        dmue_db2 = np.ones_like(b2)
 
-        # dDKL_dlogsige = 1 - np.exp(2*log_sigma_encoder)
-        # dDKL_dmue = -mu_encoder
-
-        #20x400
-        dmue_dW2 = h_encoder.dot(np.ones((1,20))).T
-        #400x784
         dHe_dW1 = (-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
-
-        #Add h_decoder transposed at end
-        dp_dW5 = dp_dy * ((sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T))
-        dp_db5 = dp_dy * sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
-        
-        #1x400
-        dp_dHd = dp_dy.T.dot(dy_dHd)
-        
-        #400x20
-        dp_dW4 = dp_dHd.T * (-(np.tanh(W4.dot(z) + b4)**2 - 1).dot(z.T))
-        # print W4.shape, dp_dW4.shape
-        
-        #400x1
-        dp_db4 = dp_dHd.T*(1 - np.tanh(W4.dot(z) + b4)**2)
-        # print b4.shape, dp_db4.shape
-        
-        #1x20
-        dp_dz = dp_dHd.dot(dHd_dz)
-        # print '(1, 20)', dp_dz.shape
-        
-        #20x1
-        dp_dmue = dp_dz.T*dz_dmue
-        # print '(20, 1)', dp_dmue.shape
-        
-        #20x400
-        dp_dW2 = dp_dmue*dmue_dW2
-        # print W2.shape, dp_dW2.shape
-        
-        #dmue_db2 is 1, 20x1
-        dp_db2 = dp_dmue
-        # print '(20,1)',dp_db2.shape
-
-        #Part one of z, dz_dmue is 1     
-
-        # print W1.shape, dHe_dW1.shape
-        
-        #20x1
-        dp_dmue = dp_dz.T * dz_dmue
-        # print '(20,1)',dp_dmue.shape
-        
-        #1x400
-        dp_dHe = dp_dmue.T.dot(dmue_dHe)
-        # print '(1x400)', dp_dHe.shape
-        
-        #400x784
-        dp_dW1_1 = dp_dHe.T*dHe_dW1
-        # print W1.shape, dp_dW1_1.shape
-        
-        #400x1
         dHe_db1 = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
-        # print '(400,1)', dHe_db1.shape
-        
-        #400x1
+
+        dp_dHd = dp_dy.T.dot(dy_dHd)
+        dp_dW4 = dp_dHd.T * (-(np.tanh(W4.dot(z) + b4)**2 - 1).dot(z.T))
+        dp_db4 = dp_dHd.T*(1 - np.tanh(W4.dot(z) + b4)**2)
+        dp_dz = dp_dHd.dot(dHd_dz)
+        dp_dmue = dp_dz.T*dz_dmue
+        dp_dW2 = dp_dmue*dmue_dW2
+        dp_db2 = dp_dmue
+
+        #Part one of z    
+        dp_dmue = dp_dz.T * dz_dmue
+        dp_dHe = dp_dmue.T.dot(dmue_dHe)
+        dp_dW1_1 = dp_dHe.T*dHe_dW1
         dp_db1_1 = dp_dHe.T*dHe_db1
-        # print '(400,1)',dp_db1_1.shape 
-        
-        #20x1
-        dp_dlogsige = dp_dz.T*dz_dlogsige
-        # print '(20,1)', dp_dlogsige.shape
-        
-        #20x1
-        dp_dW3 = dp_dlogsige.dot(0.5 * h_decoder.T)
-        # print W3.shape, dp_dW3.shape
 
-        dp_db3 = dp_dlogsige*0.5
-        # print b3.shape, dp_dlogsige.shape
-
-        #Part two of z 
-        #400x1
+        #Part two of z
+        dp_dlogsige = dp_dz.T*dz_dlogsige 
         dp_dHe_2 = dlogsige_dHe.T.dot(dp_dlogsige)
-        # print '(400,1)', dp_dHe_2.shape
-
-        #400x784
         dp_dW1_2 = dp_dHe_2*dHe_dW1
-        # print W1.shape, dp_dW1_2.shape
-
-
         dp_db1_2 = dp_dHe_2*dHe_db1
-        # print b1.shape, dp_db1_2.shape
-
-        #weird dimension mismatch, there is something really wrong
-        #400x784
         dp_dW1 = dp_dW1_1 + dp_dW1_2
-        # print W1.shape, dp_dW1.shape
-
-        #400x1
         dp_db1 = dp_db1_1 + dp_db1_2
-        # print b1.shape, dp_db1.shape
+
+        dlogsige_dW3 = 0.5 * h_decoder.T
+        dlogsige_db3 = 0.5
+        dp_dW3 = dp_dlogsige.dot(dlogsige_dW3)
+        dp_db3 = dp_dlogsige*dlogsige_db3
+
+        #gradients of KL divergence term
+        dDKL_dmue = -mu_encoder
+        dDKL_dlogsige = 1 - np.exp(2*np.mean(log_sigma_encoder,1,keepdims=True))
+        dDKL_dHe_1 = dlogsige_dHe.T.dot(dDKL_dlogsige)
+        dDKL_dHe_2 = dmue_dHe.T.dot(dDKL_dmue)
+
+        dDKL_dW1_1 = dHe_dW1*dDKL_dHe_1
+        dDKL_db1_1 = dHe_db1*dDKL_dHe_1
+        dDKL_dW1_2 = dHe_dW1*dDKL_dHe_2
+        dDKL_db1_2 = dHe_db1*dDKL_dHe_2
+        dDKL_dW1 = dDKL_dW1_1 + dDKL_dW1_2
+        dDKL_db1 = dDKL_db1_1 + dDKL_db1_2
+
+        dDKL_dW2 = dDKL_dmue * dmue_dW2
+        dDKL_db2 = dDKL_dmue * dmue_db2
+
+        dDKL_dW3 = dDKL_dlogsige*dlogsige_dW3
+        dDKL_db3 = dDKL_dlogsige*dlogsige_db3
+
+        #add terms together to compute total gradients
+        dp_dW1 = dp_dW1 + dDKL_dW1
+        dp_db1 = dp_db1 + dDKL_db1
+        dp_dW2 = dp_dW2 + dDKL_dW2
+        dp_db2 = dp_db2 + dDKL_db2
+        dp_dW3 = dp_dW3 + dDKL_dW3
+        dp_db3 = dp_db3 + dDKL_db3
 
         return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
         "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}, logp
