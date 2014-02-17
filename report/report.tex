@@ -54,18 +54,19 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection{Modelling the conditional distributions}
-For our experiments, we approximate the conditional distributions $P(X|Z)$ and $q(Z|X)$ with neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $P(\mathbf{z})$ from data point $\mathbf{x}$ is now done through
+For our experiments, we approximate the conditional distributions $P(X|Z)$ and $q(Z|X)$ with neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $q(\mathbf{z}|\mathbf{x})$ from data point $\mathbf{x}$ is now done through
 \begin{align}
 \mathbf{\mu_z} = f_2(\mathbf{W}_2^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_2}) \\
 \mathbf{\sigma_z} = f_3(\mathbf{W}_3^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_3})
 \end{align} 
 Where $f_1$ through $f_3$ denote the activation functions.\\
 $P(X|Z)$ can be modeled in this way too if the data $\mathbf{X}$ is continuously valued. If the values are binary, it can be modeled by a multivariate Bernoulli distribution.  These neural networks are powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. They can be efficiently trained with backpropagation of error derivatives, especially if batch optimization is used. This is done by expanding $x$, $\mathbf{\mu_z}$ and $\mathbf{\sigma_z}$ to matrices to acquire gradients of multiple data points at once for one parameter update step.\\
-Training these two MLPs in such a fashion effectively creates an (variational) auto-encoder, where a hidden representation, or features, can be computed through the \textit{encoder} $P(\mathbf{z}|\mathbf{x})$ and data can be generated from a hidden representation $\mathbf{z}$ through the \textit{decoder} $q(\mathbf{x}|\mathbf{z})$
+Training these two MLPs in such a fashion effectively creates an (variational) auto-encoder, where a hidden representation, or features, can be computed through the \textit{encoder} $q(\mathbf{z}|\mathbf{x})$ and data can be generated from a hidden representation $\mathbf{z}$ through the \textit{decoder} $p(\mathbf{x}|\mathbf{z})$
 
 \section{Auto-encoders}
 
-Before we dive into our experiments, let us first discuss Auto-Encoders, or autoassociators as \cite{bengio2009learning} calls them, in some more detail. Auto-Encoders are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder can learn a more powerful mapping.\\
+Before we dive into our experiments, let us first discuss Auto-Encoders, or autoassociators as \cite{bengio2009learning} calls them, in some more detail. Auto-Encoders are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder can learn a more powerful mapping \cite{japkowicz2000nonlinear}. \\
+%Auto encoder discussion above here!
 Auto-encoders are frequently used for dimensionality reduction. Also, feature extraction is a useful application. Extracting useful features from data is useful in different areas, one example being classification.
 
 An important application of auto-encoders, as \cite{bengio2009learning} describe, is as a first step in constructing deep multi-layer neural networks. An example of this application is to first train an auto-encoder on unlabeled data, then train another auto-encoder on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. This yields a deep network with good initialization of the weights, which can be fine-tuned through backpropagation of error derivatives. 
@@ -90,8 +91,6 @@ We first trained an auto-encoder with 400 hidden units and 20-dimensional latent
 \caption{Lower bound of the log likelihood per data point of both the train and test data during training}
 \end{center}
 \end{figure}
-
-Also, we trained an auto-encoder with two-dimensional latent space in order to generate data for varying values of the latent variables along both latent dimensions. The resulting manifold is shown in Figure 2.
 
 \begin{figure}[htb]
 \begin{center}
@@ -126,7 +125,7 @@ In the remainder of the experiments, we will focus on one useful application of 
 
 \subsubsection{Classifying MNIST on features}
 
-In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGDVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0\cdot 10^7$ training examples, and reached a lower bound of $-101.53$ on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5\cdot 10^7$ training examples from the MNIST training set. This yielded the same results as $0.5\cdot 10^7$ training examples and thus was enough iterations for convergence. This auto-encoder is used in several experiments later. \\
+In this subsection, we detail how well logistic regression performed on MNIST when using raw pixel data as input, features learned with an SGVB Auto-Encoder as input, and with features learned with an RBM as input. \\ For this, we used the same Auto-Encoder of which the lower bound is shown in Figure 1. Thus, it has 400 hidden units and latent dimensionality of 20, was trained on approximately $5.0\cdot 10^7$ training examples, and reached a lower bound of $-101.53$ on the log likelihood per data point. The trained RBM also contained 400 hidden units to ensure the same representational power, and was trained on $1.5\cdot 10^7$ training examples from the MNIST training set. This yielded the same results as $0.5\cdot 10^7$ training examples and thus was enough iterations for convergence. This auto-encoder is used in several experiments later. \\
 Logistic regression was run until results on the validation set declined or stabilized. The results are shown in Table 1.
 
 \begin{table}
@@ -147,15 +146,18 @@ To investigate whether the boost in classification accuracy generalizes (at leas
 This dataset consists of 1,121,749 annotated data points in 3,750 different classes, with each class containing approximately the same number of characters. Each data point contains grey values of an image of a handwritten Chinese character and a code for its corresponding class. For preprocessing, we binarized the images and scaled them to 40x40. This is still larger than MNIST, which has dimensions 28 x 28 but was deemed necessary to keep the more fine grained structure of the characters intact. As images had varying aspect ratios, we added white padding whenever necessary, in order to have constant dimensionality of the data. Due to resource and time limitations, we only used 50 classes, resulting in 11,578 data points. The resulting dataset is similar to MNIST in size and type, but considerably more complex in that the images are larger, there are 5 times as many classes, and the structure in the images is more complex.\\
 Once again, we trained an auto-encoder on the data, and used logistic regression to classify the data. For the auto-encoder, we used 500 hidden units and hidden dimensionality of 200. The auto-encoder is trained on the 10,000 images in the train set and the lower bound on the log likelihood during training is shown in Figure 5. 
 
+
+%!!! CHANGE THIS PLOT
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[height=3.1in,width=4in]{lowerboundchinese.png}
-\caption{Lower bound of the log likelihood per datapoint of the train set during training.}
+\caption{Lower bound of the log likelihood per data point of the train set during training.}
 \end{center}
 \end{figure}
 
+%Update these scores by using the new trained chinese character encoder (on small set)?
 Once again, we trained a classifier with logistic regression on both the preprocessed pixel values as well as the features extracted from the trained encoder. \\
-Logistic regression on the pixel values yielded a test set accuracy of 66.29\%, compared to 69.17\% when classifying on the features. Percentage-wise, this is a similar increase in accuracy as achieved on MNIST, but as the scores are much lower than on MNIST, this increase is relatively small. \\
+Logistic regression on the pixel values yielded a test set accuracy of 66.29\%, compared to 69.17\% when classifying on the features. Percentage-wise, this is a similar increase in accuracy as achieved on MNIST. However, as logistic regression on MNIST already scores above 90\%, the improvement there is more impressive. \\
 It is not obvious whether this indicates whether the learned features are less effective for this dataset than for MNIST. If so, one possible explanation is that the lower bound had not converged as much as the lower bound for MNIST (see Figure 1). Additional experiments, such as training the auto-encoder longer, training an RBM to extract features to classify on, and training on a larger part of the Chinese character dataset could provide more insight in the effectiveness on SGVB auto-encoders for use in classification in general and for the Chinese character dataset in particular.
 
 
@@ -164,7 +166,7 @@ It is not obvious whether this indicates whether the learned features are less e
 In practice it is hard to obtain large annotated datasets for supervised learning. Therefore, we also tested the effectiveness of learned features for improving the classification results for small subsets of MNIST. Once again, logistic regression is our classification method of choice. In addition to features calculated with the auto-encoder trained earlier (see Figure 1), a two-layer auto-encoder was trained with SGVB. This was done by stacking another auto-encoder on top of the first auto-encoder. This was done simply by using the features, computed by the first auto-encoder, as input for SGD to train a new auto-encoder as before. Since the values of these computed features are continuous, as opposed to the pixel data, the second auto-encoder was trained to approximate Gaussian distribution instead of a Bernoulli distribution, as discussed earlier. For the second auto-encoder, once again 400 hidden units and latent dimensionality of 20 were chosen to be able to compare the results. The resulting features for the two-layer auto-encoder are then computed through the following formula. Note that the output of the first hidden layer is normalized between 0 and 1.
 
 \begin{align}
-    f = \log(1 + \exp[-(\tanh(\textbf{W}^T*\textbf{X} + \textbf{b}) + 1)/2])
+    f(\textbf{X}) = \log(1 + \exp[-(\tanh(\textbf{W}^T*\textbf{X} + \textbf{b}) + 1)/2])
 \end{align}
 
 In our experiment, we selected the first $x$ training examples from the training set of MNIST as our training set, where $x$ started at 4 and was increased each time by multiplying it with 2, up to a size of 2048. To evaluate the results for each dataset size, we used the first 1000 data points of the MNIST test set and validation set, respectively.\\
@@ -180,10 +182,34 @@ Figure 6 shows the accuracy on the test set after training logistic regression o
 These results show that also for small datasets, unsupervised learning with SGVB auto-encoders can increase the effectiveness of classification algorithms. As in logistic regression on the full dataset, the resulting two- and three-layer MLPs were not trained as a whole on supervised data. Also, the layers of the two-layer auto-encoder were trained independently, while jointly training all the parameters could fine tune the parameters to obtain better features. These possibilities can be explored further in future experiments. Also, training and effectively fine-tuning multilayer auto-encoders with SGVB seems very promising from these somewhat preliminary results. 
 
 \subsection{Generalizability of Features}
+%Added for Durk - check
+One of the advantages of extracting a set of relevant features of data, in general, is that performing classification on these features is more robust to overfitting than performing classifications on the original data. This robustness can be explained by the fact that the weights activate on a clump of pixels, which is a more discriminative property of an image then the raw pixel values would be.  Such an activation can be seen in figure 7, although this visualization is of the weights of the decoder the effect is the same for the weights of the encoder.
 
-One of the advantages of extracting a set of relevant features of data, in general, is that performing classification on these features is more robust to overfitting than performing classifications on the original data.  In this subsection, we detail an experiment designed to test the extent to whether this general property of features is applicable to the feature representation generated with the trained auto-encoder described earlier.\\
+\begin{figure}[htb]
+\label{weights}
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{w1.png}
+\end{minipage}%
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{w2.png}
+\end{minipage}\\
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{w3.png}
+\end{minipage}%
+\centering
+\begin{minipage}{0.36\textwidth}
+\includegraphics[height=2in,width=2.5in]{w4.png}
+\end{minipage}
+\caption{Visualization of four dimension of the weights of the decoder of MNIST}
+\end{figure}
+
+
+In this subsection, we detail an experiment designed to test the extent to whether this general property of features is applicable to the feature representation generated with the trained auto-encoder described earlier.\\
 We chose a Support Vector Machine with a Radial Basis Function kernel as our classification method, since the susceptibility of this method to overfitting is easily manipulable by setting the precision of the RBF kernel. Too high values for this hyperparameter will lead to overfitting, while too low values will prevent overfitting, but at the cost of reducing the discriminative power (and thus, accuracy). As the robustness to overfitting is particularly desirable when training on a small dataset, we trained a Support Vector Machine on small subsets of the training set of MNIST, as well as on the features extracted from the same data using the trained auto-encoder. Once again, we used the first 1000 examples from the MNIST test set to calculate the test accuracy.\\
-The achieved train and test set accuracy across different dataset sizes are shown for different settings of the precision of the RBF kernel in Figure 7. It is clearly visible that for larger precision, classifying on pixel values is heavily outperformed by using the learned features. Using the features yields acceptable results even with $\gamma = 0.3$, where this leads to such severe overfitting on the pixel values that the resulting classifier barely performs better than random on the test set.\\
+The achieved train and test set accuracy across different dataset sizes are shown for different settings of the precision of the RBF kernel in Figure 8. It is clearly visible that for larger precision, classifying on pixel values is heavily outperformed by using the learned features. Using the features yields acceptable results even with $\gamma = 0.3$, where this leads to such severe overfitting on the pixel values that the resulting classifier barely performs better than random on the test set.\\
 These results clearly demonstrate the robustness to overfitting that comes from learning a feature representation of data. This further improves the utility of SGVB as a method to improve classification algorithms, especially when annotated data is scarce. Presumably, these results are compounded when higher-level features are extracted from the data. Once higher-level features have been extracted effectively with SGVB, this experiment can be repeated to investigate this further.
 
 
@@ -210,9 +236,9 @@ These results clearly demonstrate the robustness to overfitting that comes from 
 \end{figure}
 
 \subsection{Regularizing effect of the lower bound}
-Kingma and Welling \cite{kingma2013auto} claim that the lower bound has a regularizing effect. This regularization leads to weights along some hidden dimensions to become negligibly small (unused). This would be a welcome property as it would become unnecessary to tune this hyper-parameter. Furthermore, a practical advantage of this is that by inspecting the L2 norm of the weights during training, it is possible to monitor the relative influence of each dimension. This information can provide speed-ups by pruning the unused dimensions during training.
+Kingma and Welling \cite{kingma2013auto} claim that the lower bound has a regularizing effect. This regularization leads to weights along some hidden dimensions to become negligibly small (unused). This would be a welcome property as it would become unnecessary to tune the amount of hidden dimensions manually. Furthermore, a practical advantage of this is that by inspecting the L2 norm of the weights during training, it is possible to monitor the relative influence of each dimension. This information can provide speed-ups by pruning the unused dimensions during training.
 
-We performed an experiment in which we trained two auto-encoders with 400 hidden units on MNIST. One of these has an approximately appropriate hidden dimensionality of 20, the other one 400, which is too many for MNIST. A histogram of normalized size of the weights across different hidden dimensions is shown in Figure 8.
+We performed an experiment in which we trained two auto-encoders with 400 hidden units on MNIST. One of these has an approximately appropriate hidden dimensionality of 20, the other one 400, which is too many for MNIST. A histogram of normalized size of the weights across different hidden dimensions is shown in Figure 9.
 
 \begin{figure}[htb]
     \centering
