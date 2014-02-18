@@ -153,42 +153,45 @@ class AEVB:
         logp = logpxz + KLD
 
         #now sum over batch where possible
-        h_encoder = np.sum(h_encoder,1,keepdims=True)
-        h_decoder = np.sum(h_decoder,1,keepdims=True)
-        z = np.sum(z,1,keepdims=True)
-        mu_encoder = np.mean(mu_encoder,1,keepdims=True)
+        #h_encoder = np.sum(h_encoder,1,keepdims=True)
+        #h_decoder = np.sum(h_decoder,1,keepdims=True)
+        #z = np.sum(z,1,keepdims=True)
+        #mu_encoder = np.mean(mu_encoder,1,keepdims=True)
         #log_sigma_encoder staat nu later, maar kan evt hier. y staat ook later want we willen x niet middelen (toch?)
 
-        dp_dy = np.sum((x/y - (x - 1)/(y - 1)),1, keepdims=True)
+        # dp_dy    = np.sum((x/y - (x - 1)/(y - 1)),1, keepdims=True)
+        dp_dy    = np.sum((x/y - (1 - x)/(1 - y)),1, keepdims=True)
         #y = np.sum(y,1,keepdims=True)
-        dy_dHd = np.multiply(W5,(sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))))
-        dHd_dz = np.multiply(-(np.tanh(W4.dot(z) + b4)**2 - 1),W4)
-        dz_dmue = np.ones_like(z)
+        dy_dHd   = np.multiply(W5,np.sum(y * (1 - y),1,keepdims=True))
+
+        dHd_dz   = np.multiply(np.sum(-(np.tanh(W4.dot(z) + b4)**2 - 1),1,keepdims=True),W4)
+        dz_dmue  = np.sum(np.ones_like(z),1,keepdims=True)
         #kunnen we niet net zo goed 1 keer noise samplen met kleinere variantie??
         dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
         dmue_dHe = W2
-        dlogsige_dHe = (0.5 * W3)
-        dy_dW5 = (sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))).dot(h_decoder.T)
-        dy_db5 = sigmoid(W5.dot(h_decoder) + b5) * (1 - sigmoid(W5.dot(h_decoder) + b5))
-        dp_dW5 = dp_dy * dy_dW5
-        dp_db5 = dp_dy * dy_db5
-        dmue_dW2 = h_encoder.T*(np.ones_like(W2))
+        dlogsige_dHe = 0.5 * W3
+        dy_dW5   = (y * (1 - y)).dot(h_decoder.T)
+        dy_db5   = np.sum((y * (1 - y)),1, keepdims=True)
+        dp_dW5   = dp_dy * dy_dW5
+        dp_db5   = dp_dy * dy_db5
+        dmue_dW2 = np.sum(h_encoder,1,keepdims=True).T*(np.ones_like(W2))
         dmue_db2 = np.ones_like(b2)
 
-        dHe_dW1 = (-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
-        dHe_db1 = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
+        dHe_dW1  = (-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
+        dHe_db1  = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
 
-        dp_dHd = dp_dy.T.dot(dy_dHd)
-        dp_dW4 = dp_dHd.T * (-(np.tanh(W4.dot(z) + b4)**2 - 1).dot(z.T))
-        dp_db4 = dp_dHd.T*(1 - np.tanh(W4.dot(z) + b4)**2)
-        dp_dz = dp_dHd.dot(dHd_dz)
-        dp_dmue = dp_dz.T*dz_dmue
-        dp_dW2 = dp_dmue*dmue_dW2
-        dp_db2 = dp_dmue
+        dp_dHd   = dp_dy.T.dot(dy_dHd)
+        dp_dW4   = dp_dHd.T * (1 - h_decoder**2).dot(z.T)
+        dHd_db4  = np.sum(1 - (h_decoder**2),1,keepdims=True)
+        dp_db4   = dp_dHd.T * dHd_db4
+        dp_dz    = dp_dHd.dot(dHd_dz)
+        dp_dmue  = dp_dz.T*dz_dmue
+        dp_dW2   = dp_dmue*dmue_dW2
+        dp_db2   = dp_dmue
 
         #Part one of z    
-        dp_dmue = dp_dz.T * dz_dmue
-        dp_dHe = dp_dmue.T.dot(dmue_dHe)
+        dp_dmue  = dp_dz.T * dz_dmue
+        dp_dHe   = dp_dmue.T.dot(dmue_dHe)
         dp_dW1_1 = dp_dHe.T*dHe_dW1
         dp_db1_1 = dp_dHe.T*dHe_db1
 
@@ -197,73 +200,52 @@ class AEVB:
         dp_dHe_2 = dlogsige_dHe.T.dot(dp_dlogsige)
         dp_dW1_2 = dp_dHe_2*dHe_dW1
         dp_db1_2 = dp_dHe_2*dHe_db1
-        dp_dW1 = dp_dW1_1 + dp_dW1_2
-        dp_db1 = dp_db1_1 + dp_db1_2
-
-        dlogsige_dW3 = 0.5 * h_decoder.T
-        dlogsige_db3 = 0.5
-        dp_dW3 = dp_dlogsige.dot(dlogsige_dW3)
-        dp_db3 = dp_dlogsige*dlogsige_db3
+        dp_dW1   = dp_dW1_1 + dp_dW1_2
+        dp_db1   = dp_db1_1 + dp_db1_2
+        dlogsige_dW3 = 0.5 * np.sum(h_decoder,1,keepdims=True).T * np.ones_like(W3)
+        dlogsige_db3 = 0.5 * np.ones_like(b3)
+        dp_dW3   = dp_dlogsige * dlogsige_dW3
+        dp_db3   = dp_dlogsige * dlogsige_db3
 
         #gradients of KL divergence term
-        dDKL_dmue = -mu_encoder
-        dDKL_dlogsige = 1 - np.exp(2*np.mean(log_sigma_encoder,1,keepdims=True))
-        dDKL_dHe_1 = dlogsige_dHe.T.dot(dDKL_dlogsige)
-        dDKL_dHe_2 = dmue_dHe.T.dot(dDKL_dmue)
+        dKLD_dmue = np.sum(-mu_encoder,1,keepdims=True)
+        dKLD_dlogsige = np.sum(1 - np.exp(2*log_sigma_encoder),1,keepdims=True)
+        dKLD_dHe_1 = dlogsige_dHe.T.dot(dKLD_dlogsige)
+        dKLD_dHe_2 = dmue_dHe.T.dot(dKLD_dmue)
 
-        dDKL_dW1_1 = dHe_dW1*dDKL_dHe_1
-        dDKL_db1_1 = dHe_db1*dDKL_dHe_1
-        dDKL_dW1_2 = dHe_dW1*dDKL_dHe_2
-        dDKL_db1_2 = dHe_db1*dDKL_dHe_2
-        dDKL_dW1 = dDKL_dW1_1 + dDKL_dW1_2
-        dDKL_db1 = dDKL_db1_1 + dDKL_db1_2
+        dKLD_dW1_1 = dHe_dW1*dKLD_dHe_1
+        dKLD_db1_1 = dHe_db1*dKLD_dHe_1
+        dKLD_dW1_2 = dHe_dW1*dKLD_dHe_2
+        dKLD_db1_2 = dHe_db1*dKLD_dHe_2
+        dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
+        dKLD_db1 = dKLD_db1_1 + dKLD_db1_2
 
-        dDKL_dW2 = dDKL_dmue * dmue_dW2
-        dDKL_db2 = dDKL_dmue * dmue_db2
+        dKLD_dW2 = dKLD_dmue * dmue_dW2
+        dKLD_db2 = dKLD_dmue * dmue_db2
 
-        dDKL_dW3 = dDKL_dlogsige*dlogsige_dW3
-        dDKL_db3 = dDKL_dlogsige*dlogsige_db3
+        dKLD_dW3 = dKLD_dlogsige*dlogsige_dW3
+        dKLD_db3 = dKLD_dlogsige*dlogsige_db3
 
         #add terms together to compute total gradients
-        dp_dW1 = dp_dW1 + dDKL_dW1
-        dp_db1 = dp_db1 + dDKL_db1
-        dp_dW2 = dp_dW2 + dDKL_dW2
-        dp_db2 = dp_db2 + dDKL_db2
-        dp_dW3 = dp_dW3 + dDKL_dW3
-        dp_db3 = dp_db3 + dDKL_db3
 
+        #print dKLD_db1.shape   
+        dp_dW1 += dKLD_dW1
+        dp_db1 += dKLD_db1
+        dp_dW2 += dKLD_dW2
+        dp_db2 += dKLD_db2
+        dp_dW3 += dKLD_dW3
+        dp_db3 += dKLD_db3
+
+        #print dp_dW1.shape, dp_db1.shape, dp_dW2.shape, dp_db2.shape, dp_dW3.shape, dp_db3.shape
+
+        #norms = [np.linalg.norm(dp_dW1), np.linalg.norm(dp_db1),np.linalg.norm(dp_dW2),np.linalg.norm(dp_db2),
+        #np.linalg.norm(dp_dW3),np.linalg.norm(dp_db3),np.linalg.norm(dp_dW4),np.linalg.norm(dp_db4),
+        #np.linalg.norm(dp_dW5),np.linalg.norm(dp_db5)]
+
+        #average = np.sum(norms)/10 
+        #print norms/average
         return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
         "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}, logp
-        
-
-    def _computeLB(self,data, eps):
-        sigmoid = lambda x: 1/1+np.exp(-x)
-        h_encoder = np.tanh(W1.dot(x) + b1)
-        mu_encoder = W2.dot(h_encoder) + b2
-        log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
-
-        z = mu_encoder + np.exp(log_sigma_encoder)*eps
-
-        logqzx = sum(sum(-(0.5 * log(2 * pi) + log_sigma_encoder) - 0.5 * ((z - mu_encoder)/exp(log_sigma_encoder))^2));
-        logpz = sum(sum(-0.5*(z^2) - 0.5 * log(2 * pi)));
-        logp = logpxz + logpz - logqzx;
-
-        return logp
-
-    def _getLowerBound(self,data):
-        lowerbound = 0
-        [N,dimX] = data.shape
-        batches = np.arange(0,N,self.batch_size)
-        if batches[-1] != N:
-            batches = np.append(batches,N)
-
-        for i in xrange(0,len(batches)-2):
-            minibatch = data[batches[i]:batches[i+1]]
-            e = np.random.normal(0,1,[self.dimZ,minibatch.shape[0]])
-            lowerbound += self._computeLB(data,eps)
-
-            return lowerbound/N
-
 
     def _updateParams(self,minibatch,N):
         for l in xrange(self.sampling_rounds):
