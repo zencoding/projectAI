@@ -18,14 +18,14 @@
 
 \section{Introduction}
 
-In Machine Learning, it is often useful to model data as being generated from some underlying process, or hidden variables, according to some parametrized model. A powerful way to determine these parameters and latent variables (commonly grouped together as "unobserved variables") is to perform Bayesian Inference in order to obtain the MAP estimate. The resulting integral is, however, intractable, and is in practice approximated by a family of techniques known as Variational Bayes. These techniques have various drawbacks such as limited scalability or limited performance. \\
+In Machine Learning, it is often useful to model data as being generated from some underlying process, or hidden variables, according to some parametrized model. A powerful way to determine these parameters and latent variables (commonly grouped together as "unobserved variables") is to perform Bayesian Inference in order to obtain the MAP estimate of the parameters and full posterior of the latent variables. The integral required in regular EM and mean-field approaches is, however, intractable, and is in practice approximated by a family of techniques known as Variational Bayes. These techniques have various drawbacks such as limited scalability or limited performance. \\
 Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 2014, where they present a new Variational Bayesian method, of which experimental results show it to be effective and scalable to large datasets. In this report, we describe the novelty that is introduced and investigate several applications. Specifically, we try to replicate the results of Kingma and Welling by implementing the auto-encoder that they describe in the paper. After this replication step, that confirms our implementation works as it should, we test if using the auto-encoder to transform our data improves classification. Furthermore, we test the hypothesis that performing classification on the features is robust to overfitting. 
 
 \section{Stochastic Gradient Variational Bayes}
 
 \subsection{Problem class}
 
-The problem class associated with AEVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the posterior probability over $\mathbf{X}$ by reformulating Bayes' Rule:
+The problem class associated with AEVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the marginal probability over $\mathbf{X}$ by reformulating Bayes' Rule:
 
 \begin{align}
 P(X) = \frac{P(X|Z)P(Z)}{P(Z|X)}
@@ -35,26 +35,28 @@ Where $P(X|Z)$ and $P(Z|X)$ are parameterized by $\theta$.
 \\
 
 Knowing the probability distributions $P(X|Z)$ and $P(Z|X)$, i.e. learning $\theta$, can sometimes provide information on some natural process (if one is interested in the values of the parameters, for example). But knowing the distribution $P(Z|X)$ also allows us to infer $\mathbf{Z}$ from $\mathbf{X}$ to reduce the dimensionality of (encode) our data and find structure in the data. Furthermore, introducing a prior $P(Z)$ allows for computing the marginal probability $P(X)$ to generate data for applications such as image inpainting, denoising and super-resolution.
-We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int \frac{P(Z)}{P(X|Z)}dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods.
+We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int_z P(Z) P(X|Z) dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods.
 
 \subsection{Sampling to obtain gradients}
 
-Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, \cite{kingma2013auto} derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
+Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, Kingma and Welling \cite{kingma2013auto} derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
 
 \begin{align}
 \mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
 \end{align}
 
-Here, $z$ is sampled $l$ times from $q_{\phi}(z|x)$ for each data point $x^{(i)}$. Because $z$ therefore depends on parameters $\theta$, differentiating $\mathcal{L}$ w.r.t. $\phi$ will lead to a gradient which is influenced by the current parameters $\phi$. 
-As a solution to this problem, \cite{kingma2013auto} reparametrize the samples of $z$ from $q(z|x)$ as
+%Check second sentence, starting with "Therefore..."
+Here, $z$ is sampled $L$ times from $q_{\phi}(z|x)$ for each data point $x^{(i)}$. Therefore, $z$ depends on parameters $\theta$, differentiating $\mathcal{L}$ w.r.t. $\phi$ will lead to a gradient which is influenced by the current parameters $\phi$. 
+As a solution to this problem, \cite{kingma2013auto} reparameterizes the samples of $z$ from $q(z|x)$ as
 \begin{align}
 z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim p(\mathbf{\epsilon}) 
 \end{align} 
 
-Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}, independent of $\phi$. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
+Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection{Modelling the conditional distributions}
-For our experiments, we approximate the conditional distributions $P(X|Z)$ and $q(Z|X)$ with neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $q(\mathbf{z}|\mathbf{x})$ from data point $\mathbf{x}$ is now done through
+%Easy fix, but check Durk's comment
+For our experiments, we use a neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $q(\mathbf{z}|\mathbf{x})$ from data point $\mathbf{x}$ is now done through
 \begin{align}
 \mathbf{\mu_z} = f_2(\mathbf{W}_2^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_2}) \\
 \mathbf{\sigma_z} = f_3(\mathbf{W}_3^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_3})

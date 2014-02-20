@@ -24,7 +24,7 @@ print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
 data = np.concatenate((x_train,x_valid))
 
-dimZ = 400
+dimZ = 20
 HU_decoder = 400
 HU_encoder = HU_decoder
 
@@ -45,7 +45,6 @@ encoder = aevb.AEVB(HU_decoder,HU_encoder,dimX,dimZ,batch_size,L,learning_rate)
 
 if args.double:
     encoder.continuous = True
-    encoder.data_sigma = np.std(data,0, keepdims=True).T
 
 print "Creating Theano functions"
 encoder.createGradientFunctions()
