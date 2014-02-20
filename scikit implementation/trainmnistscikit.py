@@ -34,5 +34,5 @@ encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,10
 
 
 print "Iterating"
-np.random.shuffle(data)
+# np.random.shuffle(data)
 encoder.fit(data)

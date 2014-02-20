@@ -29,6 +29,7 @@ class AEVB:
 
     def initParams(self):
     	"""Initialize weights and biases, depending on if continuous data is modeled an extra weight matrix is created"""
+        np.random.seed(42)
         W1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,self.dimX))
         b1 = np.random.normal(0,self.sigmaInit,(self.HU_encoder,1))
 
@@ -115,6 +116,7 @@ class AEVB:
 
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
+            print np.sum(miniBatch[0])
             totalGradients = self.getGradients(miniBatch.T)
             self.updateParams(totalGradients,N,miniBatch.shape[0])
 
@@ -128,6 +130,7 @@ class AEVB:
 
         for i in xrange(0,len(batches)-2):
             miniBatch = data[batches[i]:batches[i+1]]
+            np.random.seed(42)
             e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[0]])
             lowerbound += self.lowerboundfunction(*(self.params),x=miniBatch.T,eps=e)
 
@@ -138,6 +141,7 @@ class AEVB:
     	"""Compute the gradients for one minibatch and check if these do not contain NaNs"""
         totalGradients = [0] * len(self.params)
         for l in xrange(self.L):
+            np.random.seed(42)
             e = np.random.normal(0,1,[self.dimZ,miniBatch.shape[1]])
             gradients = self.gradientfunction(*(self.params),x=miniBatch,eps=e)
             self.lowerbound += gradients[-1]
@@ -154,6 +158,9 @@ class AEVB:
     def updateParams(self,totalGradients,N,current_batch_size):
     	"""Update the parameters, taking into account AdaGrad and a prior"""
         for i in xrange(len(self.params)):
+            print i,totalGradients[i]
+            print i, np.linalg.norm(totalGradients[i])
+            raw_input()
             self.h[i] += totalGradients[i]*totalGradients[i]
             if i < 5 or (i < 6 and len(self.params) == 12):
                 prior = 0.5*self.params[i]
