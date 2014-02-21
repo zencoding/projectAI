@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 print "Loading MNIST data"
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test) = load_mnist()
-data = np.concatenate((x_train,x_valid))
+data = x_train
 
 dimZ = 20
 HU_decoder = 400
@@ -55,8 +55,8 @@ if args.params:
     encoder.params, encoder.h, lowerbound, testlowerbound = load(args.params+'.npy')
 else:
     encoder.initParams()
-    for i in xrange(0,10):
-        encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
+    # for i in xrange(0,10):
+    #     encoder.initH(data[batch_size*i:batch_size*(i+1)].T)
     lowerbound = np.array([])
     testlowerbound = np.array([])
 

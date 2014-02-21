@@ -167,7 +167,8 @@ class AEVB:
         #y = np.sum(y,1,keepdims=True)
         dy_dHd   = np.multiply(W5,np.mean(y * (1 - y),1,keepdims=True))
 
-        dHd_dz   = np.multiply(np.mean(-(np.tanh(W4.dot(z) + b4)**2 - 1),1,keepdims=True),W4)
+        print W4.shape, b4.shape
+        dHd_dz   = np.multiply(np.mean(1 - np.tanh(W4.dot(z) + b4)**2,1,keepdims=True),W4)
         dz_dmue  = np.mean(np.ones_like(z),1,keepdims=True)
         #kunnen we niet net zo goed 1 keer noise samplen met kleinere variantie??
         dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
@@ -182,11 +183,11 @@ class AEVB:
         dmue_dW2 = np.mean(h_encoder,1,keepdims=True)
         dmue_db2 = np.ones_like(b2)
 
-        dHe_dW1  = (-(np.tanh(W1.dot(x) + b1)**2 - 1).dot(x.T))
+        dHe_dW1  = (1 - (np.tanh(W1.dot(x) + b1)**2).dot(x.T))
         dHe_db1  = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
 
         dp_dHd   = dp_dy.T.dot(dy_dHd)
-        dp_dW4   = dp_dHd.T * (1 - h_decoder**2).dot(z.T)
+        dp_dW4   = dp_dHd.T * ((1 - h_decoder**2).dot(z.T))
         dHd_db4  = np.sum(1 - (h_decoder**2),1,keepdims=True)
         dp_db4   = dp_dHd.T * dHd_db4
         dp_dz    = dp_dHd.dot(dHd_dz)
@@ -214,9 +215,9 @@ class AEVB:
         dp_db3   = dp_dlogsige * dlogsige_db3
 
         #gradients of KL divergence term
-        print mu_encoder
         dKLD_dmue = np.sum(-mu_encoder,1,keepdims=True)
         dKLD_dlogsige = np.sum(1 - np.exp(2*log_sigma_encoder),1,keepdims=True)
+        #ADD SUMS
         dKLD_dHe_1 = dlogsige_dHe.T.dot(dKLD_dlogsige)
         dKLD_dHe_2 = dmue_dHe.T.dot(dKLD_dmue)
 
@@ -238,9 +239,7 @@ class AEVB:
         #print dKLD_db1.shape   
         dp_dW1 += dKLD_dW1
         dp_db1 += dKLD_db1
-        print np.linalg.norm(dp_dW2)
         dp_dW2 += dKLD_dW2
-        print np.linalg.norm(dp_dW2)
         dp_db2 += dKLD_db2
         dp_dW3 += dKLD_dW3
         dp_db3 += dKLD_db3
@@ -273,9 +272,9 @@ class AEVB:
                     total_gradients[key] += gradients[key]
 
         for key in self.params:
+            raw_input()
             print key, total_gradients[key]
             print key, np.linalg.norm(total_gradients[key])
-            raw_input()
             self.h[key] += total_gradients[key]**2
             if "W" in key:
                 prior = 0.5*self.params[key]
@@ -297,10 +296,10 @@ class AEVB:
 
         if self.verbose:
             print "Initialize H"
-        for i in xrange(10):
-            minibatch = data[batches[i]:batches[i+1]]
-            self._initH(minibatch)
-
+        # for i in xrange(10):
+        #     minibatch = data[batches[i]:batches[i+1]]
+        #     self._initH(minibatch)
+        #
         for i in xrange(self.n_iter):
             if self.verbose:
                 print "iteration:", i
