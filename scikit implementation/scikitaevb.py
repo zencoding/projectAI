@@ -175,10 +175,9 @@ class AEVB:
         #Maybe just 1 is also good
         dz_dmue  = np.ones_like(mu_encoder)
         dmue_dW2 = h_encoder
-        dlogsige_dHe = 0.5 * W3
         dmue_db2 = np.ones_like(b2)
 
-        dp_dz    = (dp_dHd *dHd_dtanh).T.dot(dtanh_dz)
+        dp_dz    = (dp_dHd * dHd_dtanh).T.dot(dtanh_dz)
         dp_dmue  = dp_dz.T * dz_dmue
 
         dp_dW2   = dp_dmue.dot(dmue_dW2.T)
@@ -193,9 +192,28 @@ class AEVB:
         dp_db2 += dKLD_db2
 
 
+        dz_dlogsige = eps * np.exp(log_sigma_encoder)
+        dp_dlogsige = dp_dz.T * dz_dlogsige 
+
+        dlogsige_dW3 = 0.5 * h_encoder
+        dlogsige_db3 = 0.5 * np.ones_like(b3)
+
+        dp_dW3   = dp_dlogsige.dot(dlogsige_dW3.T)
+        dp_db3   = np.sum(dp_dlogsige * dlogsige_db3, axis = 1, keepdims = True)
+
+
+        dKLD_dlogsige = 1 - np.exp(2*log_sigma_encoder)
+        dKLD_dW3 = dKLD_dlogsige.dot(dlogsige_dW3.T)
+        dKLD_db3 = np.sum(dKLD_dlogsige * dlogsige_db3, axis = 1, keepdims = True)
+
+        #W3: this is correct
+        dp_dW3 += dKLD_dW3
+        dp_db3 += dKLD_db3
+
+
+
 
         dmue_dHe = W2
-        dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
 
 
         dHe_dW1  = (1 - (np.tanh(W1.dot(x) + b1)**2).dot(x.T))
@@ -211,19 +229,15 @@ class AEVB:
         dp_db1_1 = dp_dHe.T*dHe_db1
 
         #Part two of z
-        dp_dlogsige = dp_dz.T*dz_dlogsige 
+        dlogsige_dHe = 0.5 * W3
         dp_dHe_2 = dlogsige_dHe.T.dot(dp_dlogsige)
         dp_dW1_2 = dp_dHe_2*dHe_dW1
         dp_db1_2 = dp_dHe_2*dHe_db1
         dp_dW1   = dp_dW1_1 + dp_dW1_2
         dp_db1   = dp_db1_1 + dp_db1_2
-        dlogsige_dW3 = np.sum(0.5*h_decoder,1,keepdims=True).T * np.ones_like(W3)
-        dlogsige_db3 = 0.5 * np.ones_like(b3)
-        dp_dW3   = dp_dlogsige * dlogsige_dW3
-        dp_db3   = dp_dlogsige * dlogsige_db3
+        
 
         #gradients of KL divergence term
-        dKLD_dlogsige = np.sum(1 - np.exp(2*log_sigma_encoder),1,keepdims=True)
         #ADD SUMS
         dKLD_dHe_1 = dlogsige_dHe.T.dot(dKLD_dlogsige)
         dKLD_dHe_2 = dmue_dHe.T.dot(dKLD_dmue)
@@ -237,18 +251,15 @@ class AEVB:
 
        
 
-        dKLD_dW3 = dKLD_dlogsige*dlogsige_dW3
-        dKLD_db3 = dKLD_dlogsige*dlogsige_db3
+        
 
         #add terms together to compute total gradients
 
         #print dKLD_db1.shape   
         dp_dW1 += dKLD_dW1
         dp_db1 += dKLD_db1
-        dp_dW2 += dKLD_dW2
-        dp_db2 += dKLD_db2
-        dp_dW3 += dKLD_dW3
-        dp_db3 += dKLD_db3
+
+
 
         #print dp_dW1.shape, dp_db1.shape, dp_dW2.shape, dp_db2.shape, dp_dW3.shape, dp_db3.shape
 
