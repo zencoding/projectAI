@@ -211,64 +211,49 @@ class AEVB:
         dp_db3 += dKLD_db3
 
 
-
-
+        #W1, log p(x|z)
+        ###########################################
         dmue_dHe = W2
+        dHe_dtanh  = 1 - np.tanh(W1.dot(x) + b1)**2
+        dtanh_dW1 = x
 
+        dHe_db1  = 1 - np.tanh(W1.dot(x) + b1)**2
 
-        dHe_dW1  = (1 - (np.tanh(W1.dot(x) + b1)**2).dot(x.T))
-        dHe_db1  = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
-
-
-        
-
-        #Part one of z    
-        dp_dmue  = dp_dz.T * dz_dmue
+        #W1: log(P(x|z)), mu encoder side
         dp_dHe   = dp_dmue.T.dot(dmue_dHe)
-        dp_dW1_1 = dp_dHe.T*dHe_dW1
-        dp_db1_1 = dp_dHe.T*dHe_db1
+        dp_dW1_1 = (dp_dHe.T * dHe_dtanh).dot(dtanh_dW1.T)
+        dp_db1_1 = np.sum(dp_dHe.T * dHe_db1, axis = 1, keepdims = True)
 
-        #Part two of z
+        #W1: log(P(x|z)), log sigma encoder side
         dlogsige_dHe = 0.5 * W3
-        dp_dHe_2 = dlogsige_dHe.T.dot(dp_dlogsige)
-        dp_dW1_2 = dp_dHe_2*dHe_dW1
-        dp_db1_2 = dp_dHe_2*dHe_db1
+        dp_dHe_2 = dp_dlogsige.T.dot(dlogsige_dHe)
+
+        dp_dW1_2 = (dp_dHe_2.T * dHe_dtanh).dot(dtanh_dW1.T)
+        dp_db1_2 = np.sum(dp_dHe_2.T * dHe_db1, axis = 1, keepdims = True)
+
         dp_dW1   = dp_dW1_1 + dp_dW1_2
         dp_db1   = dp_db1_1 + dp_db1_2
+        ##########################################
         
+        #W1, DKL
+        ###########################################
+        dKLD_dHe_1 = dKLD_dlogsige.T.dot(dlogsige_dHe)
+        dKLD_dHe_2 = dKLD_dmue.T.dot(dmue_dHe)
 
-        #gradients of KL divergence term
-        #ADD SUMS
-        dKLD_dHe_1 = dlogsige_dHe.T.dot(dKLD_dlogsige)
-        dKLD_dHe_2 = dmue_dHe.T.dot(dKLD_dmue)
+        dKLD_dW1_1 = (dKLD_dHe_1.T * dHe_dtanh).dot(dtanh_dW1.T)
+        dKLD_db1_1 = np.sum(dKLD_dHe_1.T * dHe_db1, axis = 1, keepdims = True)
+        dKLD_dW1_2 = (dKLD_dHe_2.T * dHe_dtanh).dot(dtanh_dW1.T)
+        dKLD_db1_2 = np.sum(dKLD_dHe_2.T * dHe_db1, axis = 1, keepdims = True)
 
-        dKLD_dW1_1 = dHe_dW1*dKLD_dHe_1
-        dKLD_db1_1 = dHe_db1*dKLD_dHe_1
-        dKLD_dW1_2 = dHe_dW1*dKLD_dHe_2
-        dKLD_db1_2 = dHe_db1*dKLD_dHe_2
+
         dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
         dKLD_db1 = dKLD_db1_1 + dKLD_db1_2
 
-       
-
-        
-
-        #add terms together to compute total gradients
-
-        #print dKLD_db1.shape   
+        #W1: this is correct (fuck yeah!)
         dp_dW1 += dKLD_dW1
         dp_db1 += dKLD_db1
+        ######################################
 
-
-
-        #print dp_dW1.shape, dp_db1.shape, dp_dW2.shape, dp_db2.shape, dp_dW3.shape, dp_db3.shape
-
-        #norms = [np.linalg.norm(dp_dW1), np.linalg.norm(dp_db1),np.linalg.norm(dp_dW2),np.linalg.norm(dp_db2),
-        #np.linalg.norm(dp_dW3),np.linalg.norm(dp_db3),np.linalg.norm(dp_dW4),np.linalg.norm(dp_db4),
-        #np.linalg.norm(dp_dW5),np.linalg.norm(dp_db5)]
-
-        #average = np.sum(norms)/10 
-        #print norms/average
         return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
         "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}, logp
 
