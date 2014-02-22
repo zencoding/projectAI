@@ -155,46 +155,54 @@ class AEVB:
         KLD = 0.5 * np.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - np.exp(2*log_sigma_encoder)) 
         logp = logpxz + KLD
 
-        #now sum over batch where possible
-        #h_encoder = np.sum(h_encoder,1,keepdims=True)
-        #h_decoder = np.sum(h_decoder,1,keepdims=True)
-        #z = np.sum(z,1,keepdims=True)
-        #mu_encoder = np.mean(mu_encoder,1,keepdims=True)
-        #log_sigma_encoder staat nu later, maar kan evt hier. y staat ook later want we willen x niet middelen (toch?)
+        #W5: This is correct
+        dp_dy    = (x/y - (1 - x)/(1 - y))
+        dy_dSig   = (y * (1 - y))
+        dp_dW5   = (dp_dy * dy_dSig).dot(h_decoder.T)
+        dp_db5   = np.sum(dp_dy * dy_dSig,1,keepdims=True)
 
-        # dp_dy    = np.sum((x/y - (x - 1)/(y - 1)),1, keepdims=True)
-        dp_dy    = np.mean((x/y - (1 - x)/(1 - y)),1, keepdims=True)
-        #y = np.sum(y,1,keepdims=True)
-        dy_dHd   = np.multiply(W5,np.mean(y * (1 - y),1,keepdims=True))
+        dSig_dHd = W5
+        #400x100
+        dp_dHd   = ((dp_dy * dy_dSig).T.dot(dSig_dHd)).T
+        dHd_dtanh   = 1 - h_decoder**2
 
-        print W4.shape, b4.shape
-        dHd_dz   = np.multiply(np.mean(1 - np.tanh(W4.dot(z) + b4)**2,1,keepdims=True),W4)
-        dz_dmue  = np.mean(np.ones_like(z),1,keepdims=True)
-        #kunnen we niet net zo goed 1 keer noise samplen met kleinere variantie??
-        dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
-        dmue_dHe = W2
+        #W4: This is correct
+        dp_dW4   = (dp_dHd * dHd_dtanh).dot(z.T)
+        dp_db4   = np.sum(dp_dHd * dHd_dtanh, axis = 1, keepdims = True)
+
+
+        dtanh_dz = W4
+        #Maybe just 1 is also good
+        dz_dmue  = np.ones_like(mu_encoder)
+        dmue_dW2 = h_encoder
         dlogsige_dHe = 0.5 * W3
-        dy_dW5   = (y * (1 - y)).dot(h_decoder.T)
-        dy_db5   = np.sum((y * (1 - y)),1, keepdims=True)
-        dp_dW5   = dp_dy * dy_dW5
-        dp_db5   = dp_dy * dy_db5
-        #!!
-        #This was wrong, only h_encoder is supposed to be here
-        dmue_dW2 = np.mean(h_encoder,1,keepdims=True)
         dmue_db2 = np.ones_like(b2)
+
+        dp_dz    = (dp_dHd *dHd_dtanh).T.dot(dtanh_dz)
+        dp_dmue  = dp_dz.T * dz_dmue
+
+        dp_dW2   = dp_dmue.dot(dmue_dW2.T)
+        dp_db2   = np.sum(dp_dmue, axis = 1, keepdims = True)
+
+        dKLD_dmue = -mu_encoder
+        dKLD_dW2 = dKLD_dmue.dot(dmue_dW2.T)
+        dKLD_db2 = np.sum(dKLD_dmue * dmue_db2, axis = 1, keepdims = True)
+
+        #W2: This is correct
+        dp_dW2 += dKLD_dW2
+        dp_db2 += dKLD_db2
+
+
+
+        dmue_dHe = W2
+        dz_dlogsige = np.sum(eps * np.exp(log_sigma_encoder),1,keepdims=True) 
+
 
         dHe_dW1  = (1 - (np.tanh(W1.dot(x) + b1)**2).dot(x.T))
         dHe_db1  = np.sum(1 - np.tanh(W1.dot(x) + b1)**2,1,keepdims=True)
 
-        dp_dHd   = dp_dy.T.dot(dy_dHd)
-        dp_dW4   = dp_dHd.T * ((1 - h_decoder**2).dot(z.T))
-        dHd_db4  = np.sum(1 - (h_decoder**2),1,keepdims=True)
-        dp_db4   = dp_dHd.T * dHd_db4
-        dp_dz    = dp_dHd.dot(dHd_dz)
-        dp_dmue  = dp_dz.T*dz_dmue
-        #Changed!
-        dp_dW2   = dp_dmue.dot(dmue_dW2.T)
-        dp_db2   = dp_dmue
+
+        
 
         #Part one of z    
         dp_dmue  = dp_dz.T * dz_dmue
@@ -215,7 +223,6 @@ class AEVB:
         dp_db3   = dp_dlogsige * dlogsige_db3
 
         #gradients of KL divergence term
-        dKLD_dmue = np.sum(-mu_encoder,1,keepdims=True)
         dKLD_dlogsige = np.sum(1 - np.exp(2*log_sigma_encoder),1,keepdims=True)
         #ADD SUMS
         dKLD_dHe_1 = dlogsige_dHe.T.dot(dKLD_dlogsige)
@@ -228,8 +235,7 @@ class AEVB:
         dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
         dKLD_db1 = dKLD_db1_1 + dKLD_db1_2
 
-        dKLD_dW2 = dKLD_dmue.dot(dmue_dW2.T)
-        dKLD_db2 = dKLD_dmue * dmue_db2
+       
 
         dKLD_dW3 = dKLD_dlogsige*dlogsige_dW3
         dKLD_db3 = dKLD_dlogsige*dlogsige_db3
