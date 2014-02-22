@@ -92,7 +92,6 @@ class AEVB:
             The dimensionality of the input data X
         """
         sigmaInit = 0.01
-        np.random.seed(42)
         W1 = np.random.normal(0,sigmaInit,(self.n_components_encoder,dimX))
         b1 = np.random.normal(0,sigmaInit,(self.n_components_encoder,1))
 
@@ -129,7 +128,6 @@ class AEVB:
             The data to use for computing gradients
         """
 
-        np.random.seed(42)
         e = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
         gradients,lowerbound = self._computeGradients(minibatch.T,e)
 
@@ -159,7 +157,7 @@ class AEVB:
         dp_dy    = (x/y - (1 - x)/(1 - y))
         dy_dSig   = (y * (1 - y))
         dp_dW5   = (dp_dy * dy_dSig).dot(h_decoder.T)
-        dp_db5   = np.sum(dp_dy * dy_dSig,1,keepdims=True)
+        dp_db5   = np.sum(dp_dy * dy_dSig, axis = 1, keepdims = True)
 
         dSig_dHd = W5
         #400x100
@@ -181,15 +179,16 @@ class AEVB:
         dp_dmue  = dp_dz.T * dz_dmue
 
         dp_dW2   = dp_dmue.dot(dmue_dW2.T)
-        dp_db2   = np.sum(dp_dmue, axis = 1, keepdims = True)
+        dp_db2   = dp_dmue
 
         dKLD_dmue = -mu_encoder
         dKLD_dW2 = dKLD_dmue.dot(dmue_dW2.T)
-        dKLD_db2 = np.sum(dKLD_dmue * dmue_db2, axis = 1, keepdims = True)
+        dKLD_db2 = dKLD_dmue * dmue_db2
 
         #W2: This is correct
         dp_dW2 += dKLD_dW2
-        dp_db2 += dKLD_db2
+        dp_db2 = np.sum(dp_db2 + dKLD_db2, axis = 1, keepdims = True)
+
 
 
         dz_dlogsige = eps * np.exp(log_sigma_encoder)
@@ -199,16 +198,16 @@ class AEVB:
         dlogsige_db3 = 0.5 * np.ones_like(b3)
 
         dp_dW3   = dp_dlogsige.dot(dlogsige_dW3.T)
-        dp_db3   = np.sum(dp_dlogsige * dlogsige_db3, axis = 1, keepdims = True)
+        dp_db3   = dp_dlogsige * dlogsige_db3
 
 
         dKLD_dlogsige = 1 - np.exp(2*log_sigma_encoder)
         dKLD_dW3 = dKLD_dlogsige.dot(dlogsige_dW3.T)
-        dKLD_db3 = np.sum(dKLD_dlogsige * dlogsige_db3, axis = 1, keepdims = True)
+        dKLD_db3 = dKLD_dlogsige * dlogsige_db3
 
         #W3: this is correct
         dp_dW3 += dKLD_dW3
-        dp_db3 += dKLD_db3
+        dp_db3 = np.sum(dp_db3 + dKLD_db3, axis = 1, keepdims = True)
 
 
         #W1, log p(x|z)
@@ -217,19 +216,19 @@ class AEVB:
         dHe_dtanh  = 1 - np.tanh(W1.dot(x) + b1)**2
         dtanh_dW1 = x
 
-        dHe_db1  = 1 - np.tanh(W1.dot(x) + b1)**2
-
         #W1: log(P(x|z)), mu encoder side
         dp_dHe   = dp_dmue.T.dot(dmue_dHe)
-        dp_dW1_1 = (dp_dHe.T * dHe_dtanh).dot(dtanh_dW1.T)
-        dp_db1_1 = np.sum(dp_dHe.T * dHe_db1, axis = 1, keepdims = True)
+        dp_dtanh = dp_dHe.T * dHe_dtanh
+        dp_dW1_1 = (dp_dtanh).dot(dtanh_dW1.T)
+        dp_db1_1 = dp_dtanh
 
         #W1: log(P(x|z)), log sigma encoder side
         dlogsige_dHe = 0.5 * W3
         dp_dHe_2 = dp_dlogsige.T.dot(dlogsige_dHe)
 
-        dp_dW1_2 = (dp_dHe_2.T * dHe_dtanh).dot(dtanh_dW1.T)
-        dp_db1_2 = np.sum(dp_dHe_2.T * dHe_db1, axis = 1, keepdims = True)
+        dp_dtanh_2 = dp_dHe_2.T * dHe_dtanh
+        dp_dW1_2 = (dp_dtanh_2).dot(dtanh_dW1.T)
+        dp_db1_2 = dp_dtanh_2
 
         dp_dW1   = dp_dW1_1 + dp_dW1_2
         dp_db1   = dp_db1_1 + dp_db1_2
@@ -240,10 +239,13 @@ class AEVB:
         dKLD_dHe_1 = dKLD_dlogsige.T.dot(dlogsige_dHe)
         dKLD_dHe_2 = dKLD_dmue.T.dot(dmue_dHe)
 
-        dKLD_dW1_1 = (dKLD_dHe_1.T * dHe_dtanh).dot(dtanh_dW1.T)
-        dKLD_db1_1 = np.sum(dKLD_dHe_1.T * dHe_db1, axis = 1, keepdims = True)
-        dKLD_dW1_2 = (dKLD_dHe_2.T * dHe_dtanh).dot(dtanh_dW1.T)
-        dKLD_db1_2 = np.sum(dKLD_dHe_2.T * dHe_db1, axis = 1, keepdims = True)
+        dKLD_dtanh = dKLD_dHe_1.T * dHe_dtanh
+        dKLD_dW1_1 = (dKLD_dtanh).dot(dtanh_dW1.T)
+        dKLD_db1_1 = dKLD_dtanh
+
+        dKLD_dtanh_2 = dKLD_dHe_2.T * dHe_dtanh
+        dKLD_dW1_2 = (dKLD_dtanh_2).dot(dtanh_dW1.T)
+        dKLD_db1_2 = dKLD_dtanh_2
 
 
         dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
@@ -251,7 +253,7 @@ class AEVB:
 
         #W1: this is correct (fuck yeah!)
         dp_dW1 += dKLD_dW1
-        dp_db1 += dKLD_db1
+        dp_db1 = np.sum(dp_db1 + dKLD_db1, axis = 1, keepdims = True)
         ######################################
 
         return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
@@ -259,7 +261,6 @@ class AEVB:
 
     def _updateParams(self,minibatch,N):
         for l in xrange(self.sampling_rounds):
-            np.random.seed(42)
             e = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
             gradients,lowerbound = self._computeGradients(minibatch.T,e)
 
@@ -274,9 +275,6 @@ class AEVB:
                     total_gradients[key] += gradients[key]
 
         for key in self.params:
-            raw_input()
-            print key, total_gradients[key]
-            print key, np.linalg.norm(total_gradients[key])
             self.h[key] += total_gradients[key]**2
             if "W" in key:
                 prior = 0.5*self.params[key]
@@ -298,17 +296,16 @@ class AEVB:
 
         if self.verbose:
             print "Initialize H"
-        # for i in xrange(10):
-        #     minibatch = data[batches[i]:batches[i+1]]
-        #     self._initH(minibatch)
-        #
+        for i in xrange(10):
+            minibatch = data[batches[i]:batches[i+1]]
+            self._initH(minibatch)
+        
         for i in xrange(self.n_iter):
             if self.verbose:
                 print "iteration:", i
             iteration_lowerbound = 0
             for j in xrange(0,len(batches)-2):
                 minibatch = data[batches[j]:batches[j+1]]
-                print np.sum(minibatch[0])
                 lowerbound = self._updateParams(minibatch, N)
                 iteration_lowerbound += lowerbound
             print iteration_lowerbound/N
