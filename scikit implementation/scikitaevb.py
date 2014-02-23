@@ -3,7 +3,7 @@ Project AI
 Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
-
+import time
 import numpy as np
 
 
@@ -216,8 +216,6 @@ class AEVB:
         dp_dW2 += dKLD_dW2
         dp_db2 = np.sum(dp_db2 + dKLD_db2, axis = 1, keepdims = True)
 
-
-
         dz_dlogsige = eps * np.exp(log_sigma_encoder)
         dp_dlogsige = dp_dz.T * dz_dlogsige 
 
@@ -282,7 +280,7 @@ class AEVB:
         dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
         dKLD_db1 = dKLD_db1_1 + dKLD_db1_2
 
-        #W1: this is correct (fuck yeah!)
+        #W1: this is correct
         dp_dW1 += dKLD_dW1
         dp_db1 = np.sum(dp_db1 + dKLD_db1, axis = 1, keepdims = True)
         ######################################
@@ -336,15 +334,24 @@ class AEVB:
             minibatch = data[batches[i]:batches[i+1]]
             self._initH(minibatch)
         
-        for i in xrange(self.n_iter):
-            if self.verbose:
-                print "iteration:", i
+        begin = time.time()
+        for iteration in xrange(self.n_iter):
             iteration_lowerbound = 0
+
             for j in xrange(0,len(batches)-2):
                 minibatch = data[batches[j]:batches[j+1]]
                 lowerbound = self._updateParams(minibatch, N)
                 iteration_lowerbound += lowerbound
-            print iteration_lowerbound/N
+
+            if self.verbose:
+                end = time.time()
+                print("[%s] Iteration %d, lower bound = %.2f,"
+                      " time = %.2fs"
+                      % (self.__class__.__name__, iteration,
+                         iteration_lowerbound/N, end - begin))
+                begin = end
+
+            
             list_lowerbound = np.append(list_lowerbound,iteration_lowerbound/N)
         return list_lowerbound
 
