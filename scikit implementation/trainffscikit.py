@@ -13,7 +13,7 @@ import numpy as np
 import cPickle
 
 print "Loading data"
-f = open('dataset/freyfaces.pkl','rb')
+f = open('freyfaces.pkl','rb')
 data = cPickle.load(f)
 f.close()
 
@@ -22,14 +22,16 @@ f.close()
 HU_decoder = 200
 HU_encoder = 200
 
-dimZ = 2
+dimZ = 5
 L = 1
 learning_rate = 0.02
 
-batch_size = 100
+batch_size = 20
 continuous = True
+n_iter = 100
+verbose = True
 
-encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,10,L,continuous,True)
+encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
 
 
 print "Iterating"

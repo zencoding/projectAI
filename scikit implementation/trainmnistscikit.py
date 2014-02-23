@@ -28,9 +28,10 @@ L = 1
 learning_rate = 0.01
 
 batch_size = 100
+n_iter = 100
 continuous = False
 
-encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,10,L,continuous,True)
+encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
 
 
 print "Iterating"

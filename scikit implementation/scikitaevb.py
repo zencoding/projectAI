@@ -107,12 +107,13 @@ class AEVB:
         W5 = np.random.normal(0,sigmaInit,(dimX,self.n_components_decoder))
         b5 = np.random.normal(0,sigmaInit,(dimX,1))
 
+
+        self.params = {"W1": W1, "W2" : W2, "W3": W3, "W4":W4, "W5": W5, "b1": b1, "b2": b2, "b3": b3, "b4": b4, "b5": b5}
+
         if self.continuous:
             W6 = np.random.normal(0,sigmaInit,(dimX,self.n_components_decoder))
             b6 = np.random.normal(0,sigmaInit,(dimX,1))
-            self.params = [W1,W2,W3,W4,W5,W6,b1,b2,b3,b4,b5,b6]
-        else:
-            self.params = {"W1": W1, "W2" : W2, "W3": W3, "W4":W4, "W5": W5, "b1": b1, "b2": b2, "b3": b3, "b4": b4, "b5": b5}
+            self.params.update({"W6": W6, "b6": b6})
 
         self.h = dict()
         for key in self.params:
@@ -138,35 +139,62 @@ class AEVB:
         W1, W2, W3, W4, W5 = self.params["W1"], self.params["W2"], self.params["W3"], self.params["W4"], self.params["W5"]
         b1, b2, b3, b4, b5 = self.params["b1"], self.params["b2"], self.params["b3"], self.params["b4"], self.params["b5"]
 
+
+        if self.continuous:
+            W6, b6 = self.params["W6"], self.params["b6"]
+            activation = lambda x: np.log(1 + np.exp(x))
+        else:
+            activation = lambda x: np.tanh(x)
+
         sigmoid = lambda x: 1/(1+np.exp(-x))
+
+        h_encoder = activation(W1.dot(x) + b1)
 
         h_encoder = np.tanh(W1.dot(x) + b1)
         mu_encoder = W2.dot(h_encoder) + b2
         log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
         z = mu_encoder + np.exp(log_sigma_encoder)*eps
 
-        h_decoder = np.tanh(W4.dot(z) + b4)
+        h_decoder = activation(W4.dot(z) + b4)
+
         y = sigmoid(W5.dot(h_decoder) + b5)
 
-        #Calculate lowerbound probability
-        logpxz = np.sum(x * np.log(y) + (1 - x) * np.log(1-y))
+        if self.continuous:
+            log_sigma_decoder = 0.5*(W6.dot(h_decoder) + b6)
+            logpxz = np.sum(-(0.5 * np.log(2 * np.pi) + log_sigma_decoder) - 0.5 * ((x - y) / np.exp(log_sigma_decoder))**2)
+        else:
+            logpxz = np.sum(x * np.log(y) + (1 - x) * np.log(1-y))
+
         KLD = 0.5 * np.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - np.exp(2*log_sigma_encoder)) 
         logp = logpxz + KLD
 
         #W5: This is correct
-        dp_dy    = (x/y - (1 - x)/(1 - y))
+        if self.continuous:
+            dp_dy = (np.exp(-2 * log_sigma_decoder) * 2 * (x - y))/2
+            dp_dlogsigd = np.exp(-2 * log_sigma_decoder) * (x - y)**2 - 1
+        else:
+            dp_dy    = (x/y - (1 - x)/(1 - y))
+
         dy_dSig   = (y * (1 - y))
         dp_dW5   = (dp_dy * dy_dSig).dot(h_decoder.T)
         dp_db5   = np.sum(dp_dy * dy_dSig, axis = 1, keepdims = True)
 
+        if self.continuous:
+            dp_dW6 = (dp_dlogsigd * dy_dSig).dot(0.5 * h_decoder.T)
+            dp_db6   = np.sum(dp_dlogsigd * dy_dSig, axis = 1, keepdims = True)
+
         dSig_dHd = W5
         #400x100
         dp_dHd   = ((dp_dy * dy_dSig).T.dot(dSig_dHd)).T
-        dHd_dtanh   = 1 - h_decoder**2
+
+        if self.continuous:
+            dHd_df = np.exp(W4.dot(z) + b4)/(np.exp(W4.dot(z) + b4) + 1)
+        else:
+            dHd_df   = 1 - h_decoder**2
 
         #W4: This is correct
-        dp_dW4   = (dp_dHd * dHd_dtanh).dot(z.T)
-        dp_db4   = np.sum(dp_dHd * dHd_dtanh, axis = 1, keepdims = True)
+        dp_dW4   = (dp_dHd * dHd_df).dot(z.T)
+        dp_db4   = np.sum(dp_dHd * dHd_df, axis = 1, keepdims = True)
 
 
         dtanh_dz = W4
@@ -175,7 +203,7 @@ class AEVB:
         dmue_dW2 = h_encoder
         dmue_db2 = np.ones_like(b2)
 
-        dp_dz    = (dp_dHd * dHd_dtanh).T.dot(dtanh_dz)
+        dp_dz    = (dp_dHd * dHd_df).T.dot(dtanh_dz)
         dp_dmue  = dp_dz.T * dz_dmue
 
         dp_dW2   = dp_dmue.dot(dmue_dW2.T)
@@ -213,12 +241,16 @@ class AEVB:
         #W1, log p(x|z)
         ###########################################
         dmue_dHe = W2
-        dHe_dtanh  = 1 - np.tanh(W1.dot(x) + b1)**2
+        if self.continuous:
+            dHe_df = np.exp(W1.dot(x) + b1)/(np.exp(W1.dot(x) + b1) + 1)
+        else:
+            dHe_df  = 1 - h_encoder**2
+
         dtanh_dW1 = x
 
         #W1: log(P(x|z)), mu encoder side
         dp_dHe   = dp_dmue.T.dot(dmue_dHe)
-        dp_dtanh = dp_dHe.T * dHe_dtanh
+        dp_dtanh = dp_dHe.T * dHe_df
         dp_dW1_1 = (dp_dtanh).dot(dtanh_dW1.T)
         dp_db1_1 = dp_dtanh
 
@@ -226,7 +258,7 @@ class AEVB:
         dlogsige_dHe = 0.5 * W3
         dp_dHe_2 = dp_dlogsige.T.dot(dlogsige_dHe)
 
-        dp_dtanh_2 = dp_dHe_2.T * dHe_dtanh
+        dp_dtanh_2 = dp_dHe_2.T * dHe_df
         dp_dW1_2 = (dp_dtanh_2).dot(dtanh_dW1.T)
         dp_db1_2 = dp_dtanh_2
 
@@ -239,11 +271,11 @@ class AEVB:
         dKLD_dHe_1 = dKLD_dlogsige.T.dot(dlogsige_dHe)
         dKLD_dHe_2 = dKLD_dmue.T.dot(dmue_dHe)
 
-        dKLD_dtanh = dKLD_dHe_1.T * dHe_dtanh
+        dKLD_dtanh = dKLD_dHe_1.T * dHe_df
         dKLD_dW1_1 = (dKLD_dtanh).dot(dtanh_dW1.T)
         dKLD_db1_1 = dKLD_dtanh
 
-        dKLD_dtanh_2 = dKLD_dHe_2.T * dHe_dtanh
+        dKLD_dtanh_2 = dKLD_dHe_2.T * dHe_df
         dKLD_dW1_2 = (dKLD_dtanh_2).dot(dtanh_dW1.T)
         dKLD_db1_2 = dKLD_dtanh_2
 
@@ -256,8 +288,13 @@ class AEVB:
         dp_db1 = np.sum(dp_db1 + dKLD_db1, axis = 1, keepdims = True)
         ######################################
 
-        return {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
-        "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}, logp
+        gradients = {"W1": dp_dW1, "W2": dp_dW2, "W3": dp_dW3, "W4": dp_dW4, "W5": dp_dW5,
+        "b1": dp_db1, "b2": dp_db2, "b3": dp_db3, "b4": dp_db4, "b5": dp_db5}
+
+        if self.continuous:
+            gradients.update({"W6": dp_dW6, "b6": dp_db6})
+
+        return gradients, logp
 
     def _updateParams(self,minibatch,N):
         for l in xrange(self.sampling_rounds):
