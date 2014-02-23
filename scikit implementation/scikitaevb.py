@@ -335,7 +335,7 @@ class AEVB:
             self._initH(minibatch)
         
         begin = time.time()
-        for iteration in xrange(self.n_iter):
+        for iteration in xrange(1,self.n_iter+1):
             iteration_lowerbound = 0
 
             for j in xrange(0,len(batches)-2):
@@ -357,10 +357,10 @@ class AEVB:
 
     def transform(self,data):
         if self.continuous:
-            return np.log(1+np.exp(data.dot(self.params["W1"].T) + params["b1"].T))
+            return np.log(1+np.exp(data.dot(self.params["W1"].T) + self.params["b1"].T))
         else:
             return np.tanh(data.dot(self.params["W1"].T) + self.params["b1"].T)
 
     def fit_transform(self,data,iterations):
-        self.fit(data.iterations)
+        self.fit(data,iterations)
         return self.transform(data)
