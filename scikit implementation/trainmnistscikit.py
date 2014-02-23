@@ -31,6 +31,8 @@ batch_size = 100
 n_iter = 100
 continuous = False
 
+verbose = True
+
 encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
 
 
