@@ -150,7 +150,6 @@ class AEVB:
 
         h_encoder = activation(W1.dot(x) + b1)
 
-        h_encoder = np.tanh(W1.dot(x) + b1)
         mu_encoder = W2.dot(h_encoder) + b2
         log_sigma_encoder = 0.5*(W3.dot(h_encoder) + b3)
         z = mu_encoder + np.exp(log_sigma_encoder)*eps
