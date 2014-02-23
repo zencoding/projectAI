@@ -37,7 +37,6 @@ nosetests.xml
 .pydevproject
 
 .ipynb_checkpoints
-*.png
 *.npy
 
 *.tar.gz
