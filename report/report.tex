@@ -25,7 +25,7 @@ Recently, Kingma and Welling \cite{kingma2013auto} submitted a paper to ICLR 201
 
 \subsection{Problem class}
 
-The problem class associated with AEVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the marginal probability over $\mathbf{X}$ by reformulating Bayes' Rule:
+The problem class associated with SGVB is that where data $\mathbf{X}$ is assumed to be produced by some underlying process involving (continuous) hidden variables $\mathbf{Z}$. We can express the marginal probability over $\mathbf{X}$ by reformulating Bayes' Rule:
 
 \begin{align}
 P(X) = \frac{P(X|Z)P(Z)}{P(Z|X)}
@@ -51,24 +51,24 @@ As a solution to this problem, \cite{kingma2013auto} reparameterizes the samples
 \begin{align}
 z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim p(\mathbf{\epsilon}) 
 \end{align} 
+Where $p(\mathbf{\epsilon}) = N(0,I)$.
 
 Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
 
 \subsection{Modelling the conditional distributions}
-%Easy fix, but check Durk's comment
-For our experiments, we use a neural networks with a single hidden layer, similar to \cite{kingma2013auto}. $q(Z|X)$ is modeled as a multivariate Gaussian with diagonal covariance. Obtaining the parameters for the multivariate Gaussian $q(\mathbf{z}|\mathbf{x})$ from data point $\mathbf{x}$ is now done through
+In our experiments, $q(Z|X)$ and $P(X|Z)$ are neural networks with a single hidden layer, similar to \cite{kingma2013auto}.  Obtaining the parameters for the Gaussian MLP $q(\mathbf{z}|\mathbf{x})$ from one data point $\mathbf{x}$ is now done through:
 \begin{align}
-\mathbf{\mu_z} = f_2(\mathbf{W}_2^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_2}) \\
-\mathbf{\sigma_z} = f_3(\mathbf{W}_3^T \cdot f_1(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_3})
+\mathbf{\mu_z} = \mathbf{W}_2^T \cdot f(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_2} \\
+\log\mathbf{(\sigma_z}^2) = \mathbf{W}_3^T \cdot f(\mathbf{W}_1^T\mathbf{x}+\mathbf{b_1})+\mathbf{b_3}
 \end{align} 
-Where $f_1$ through $f_3$ denote the activation functions.\\
-$P(X|Z)$ can be modeled in this way too if the data $\mathbf{X}$ is continuously valued. If the values are binary, it can be modeled by a multivariate Bernoulli distribution.  These neural networks are powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. They can be efficiently trained with backpropagation of error derivatives, especially if batch optimization is used. This is done by expanding $x$, $\mathbf{\mu_z}$ and $\mathbf{\sigma_z}$ to matrices to acquire gradients of multiple data points at once for one parameter update step.\\
+ 
+Where $f$ denotes the activation function of the hidden layer.\\
+If the data $\mathbf{X}$ is continuously valued, $P(\mathbf{X}|\mathbf{Z})$ can also be modeled as Gaussian MLP, but for binary valued data, $P(\mathbf{X}|\mathbf{Z})$ is modeled as a Bernoulli MLP. These neural networks are powerful, in the sense that they are universal approximators, i.e. they can approximate any function of their input. They can be efficiently trained with backpropagation of error derivatives, especially if batch optimization is used. This is done by expanding $x$, $\mathbf{\mu_z}$ and $\mathbf{\sigma_z}$ to matrices to acquire gradients of multiple data points at once for one parameter update step.\\
 Training these two MLPs in such a fashion effectively creates an (variational) auto-encoder, where a hidden representation, or features, can be computed through the \textit{encoder} $q(\mathbf{z}|\mathbf{x})$ and data can be generated from a hidden representation $\mathbf{z}$ through the \textit{decoder} $p(\mathbf{x}|\mathbf{z})$
 
 \section{Auto-encoders}
 
 Before we dive into our experiments, let us first discuss Auto-Encoders, or autoassociators as \cite{bengio2009learning} calls them, in some more detail. Auto-Encoders are trained to encode the input in some representation so that the input can be reconstructed from that representation. In a simple network with one hidden layer that has a linear activation function and is trained with the mean squared error criterion, the hidden units learn the principal components of the data (PCA). However, if the hidden units have a non-linear activation function, the auto-encoder can learn a more powerful mapping \cite{japkowicz2000nonlinear}. \\
-%Auto encoder discussion above here!
 Auto-encoders are frequently used for dimensionality reduction. Also, feature extraction is a useful application. Extracting useful features from data is useful in different areas, one example being classification.
 
 An important application of auto-encoders, as \cite{bengio2009learning} describe, is as a first step in constructing deep multi-layer neural networks. An example of this application is to first train an auto-encoder on unlabeled data, then train another auto-encoder on the output of the hidden units of the first auto-encoder. This step can be repeated as many times as necessary. This yields a deep network with good initialization of the weights, which can be fine-tuned through backpropagation of error derivatives. 
@@ -185,7 +185,7 @@ These results show that also for small datasets, unsupervised learning with SGVB
 
 \subsection{Generalizability of Features}
 %Added for Durk - check
-One of the advantages of extracting a set of relevant features of data, in general, is that performing classification on these features is more robust to overfitting than performing classifications on the original data. This robustness can be explained by the fact that the weights activate on a clump of pixels, which is a more discriminative property of an image then the raw pixel values would be.  Such an activation can be seen in figure 7, although this visualization is of the weights of the decoder the effect is the same for the weights of the encoder.
+One of the advantages of extracting a set of relevant features from data, in general, is that performing classification on these features is more robust to overfitting than performing classification on the original data. This robustness comes from the fact that the unsupervised learning has extracted meaningful regularity in the raw data, effectively ensuring the classification algorithm does not fit to noise. Figure 7 shows some of the regularity discovered in the data by visualizing the weights of the decoder.
 
 \begin{figure}[htb]
 \label{weights}
