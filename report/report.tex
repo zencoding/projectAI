@@ -39,8 +39,7 @@ We would like to learn $\theta$ by gradient ascent/descent by differentiating so
 
 \subsection{The variational bound}
 
-%wat betekent "efficiently find the likelihood function?"
-In order to efficiently find the likelihood function, \cite{kingma2013auto} introduce $q_\phi(z|x)$ which approximates the true posterior $p_\theta(z|x)$. The marginal likelihood of each datapoint i then becomes:
+In order to be able to find the likelihood function, \cite{kingma2013auto} introduce $q_\phi(z|x)$ which approximates the (intractable) true posterior $p_\theta(z|x)$. The marginal likelihood of each datapoint i then becomes:
 
 \begin{align}
 	\log p_\theta(x^{(i)}) = D_{KL}(q_\phi(\mathbf{z}|\mathbf{x}^{(i)}) || p_\theta(\mathbf{z}|\mathbf{x}^{(i)})) + \mathcal{L}(\mathbf{\theta}, \mathbf{\phi}; \mathbf{x}^{(i)})
@@ -59,13 +58,15 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 Where $p(\mathbf{\epsilon}) = N(0,I)$.
 
 %volgende zin snap ik (nog?) niet
+%Ik snap dit gedeelte ook niet helemaal, staat in de paper onderaan pagina 3 van versie 7: http://arxiv.org/pdf/1312.6114v7.pdf
+%Misschien nog even overleggen
 We can now form Monte Carlo estimates of expectations of some function f(z) with respect to $q_\phi(z|x)$. This yields the following expression for the lower bound:
 
 \begin{align}
 \mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
 \end{align}
 
-\cite{kingma2013auto} derive an analytical expression for KLD, which we also use in our implementation as this reduces noise and computation time. %hier nog iets van: "we can now perform stochastic gradient ascent on the lower bound" of zo?
+\cite{kingma2013auto} derive an analytical expression for KLD, which we also use in our implementation as this reduces noise and computation time. On this lower bound we can perform gradient descent and make our 
 
 
 \subsection{Modelling the conditional distributions}
@@ -159,18 +160,16 @@ As the features were extracted from a one-layer neural network, this result was 
 
 To investigate whether the boost in classification accuracy generalizes (at least in part) to other data, we also performed classification on the handwritten Chinese character dataset \cite{liu2011casia}. \\
 This dataset consists of 1,121,749 annotated data points in 3,750 different classes, with each class containing approximately the same number of characters. Each data point contains grey values of an image of a handwritten Chinese character and a code for its corresponding class. For preprocessing, we binarized the images and scaled them to 40x40. This is still larger than MNIST, which has dimensions 28 x 28 but was deemed necessary to keep the more fine grained structure of the characters intact. As images had varying aspect ratios, we added white padding whenever necessary, in order to have constant dimensionality of the data. Due to resource and time limitations, we only used 50 classes, resulting in 11,578 data points. The resulting dataset is similar to MNIST in size and type, but considerably more complex in that the images are larger, there are 5 times as many classes, and the structure in the images is more complex.\\
-Once again, we trained an auto-encoder on the data, and used logistic regression to classify the data. For the auto-encoder, we used 500 hidden units and hidden dimensionality of 200. The auto-encoder is trained on the 10,000 images in the train set and the lower bound on the log likelihood during training is shown in Figure 5. 
+Once again, we trained an auto-encoder on the data, and used logistic regression to classify the data. For the auto-encoder, we used 500 hidden units and hidden dimensionality of 200. The auto-encoder is trained on the 10,000 images and the lower bound on the marginal log likelihood during training is shown in Figure 5. Due to the amount of classes the test set performance is significantly lower, at around $10^7$ datapoints the performance on the test set no longer increases.
 
 
-%!!! CHANGE THIS PLOT
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[height=3.1in,width=4in]{lowerboundchinese.png}
-\caption{Lower bound of the log likelihood per data point of the train set during training.}
+\caption{Lower bound of the log likelihood per data point during training.}
 \end{center}
 \end{figure}
 
-%Update these scores by using the new trained chinese character encoder (on small set)?
 Once again, we trained a classifier with logistic regression on both the preprocessed pixel values as well as the features extracted from the trained encoder. \\
 Logistic regression on the pixel values yielded a test set accuracy of 66.29\%, compared to 69.17\% when classifying on the features. Percentage-wise, this is a similar increase in accuracy as achieved on MNIST. However, as logistic regression on MNIST already scores above 90\%, the improvement there is more impressive. \\
 It is not obvious whether this indicates whether the learned features are less effective for this dataset than for MNIST. If so, one possible explanation is that the lower bound had not converged as much as the lower bound for MNIST (see Figure 1). Additional experiments, such as training the auto-encoder longer, training an RBM to extract features to classify on, and training on a larger part of the Chinese character dataset could provide more insight in the effectiveness on SGVB auto-encoders for use in classification in general and for the Chinese character dataset in particular.
