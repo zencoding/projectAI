@@ -8,7 +8,7 @@ Otto Fabius - 5619858
 
 #example: python trainffscikit.py
 
-import scikitaevb
+import sgvb
 import numpy as np
 import cPickle
 
@@ -31,7 +31,7 @@ continuous = True
 n_iter = 100
 verbose = True
 
-encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
+encoder = sgvb.SGVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
 
 
 print "Iterating"

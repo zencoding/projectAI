@@ -20,7 +20,7 @@ parser.add_argument("-s", "--save", help="Specify file to save params", default 
 args = parser.parse_args()
 
 
-dimZ = 1000
+dimZ = 200
 HU_decoder = 400
 HU_encoder = HU_decoder
 
@@ -46,7 +46,7 @@ encoder.createGradientFunctions()
 print "Initializing weights and biases"
 if args.params:
     print "Loading params from: {0}".format(args.params)
-    encoder.params, encoder.h, lowerbound, testlowerbound = load_test(args.params)
+    encoder.params, encoder.h, lowerbound, testlowerbound = load(args.params)
 else:
     encoder.initParams()
     for i in xrange(0, 10):

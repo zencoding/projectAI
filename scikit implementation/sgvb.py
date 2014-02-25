@@ -7,8 +7,8 @@ import time
 import numpy as np
 
 
-class AEVB:
-    """Auto-encoding variational Bayes (AEVB).
+class SGVB:
+    """Stochastic Gradient Variational Bayes
 
     An auto-encoder with variational Bayes inference.
 
@@ -124,18 +124,33 @@ class AEVB:
 
         Parameters
         ----------
-
-        minibatch: array-like, shape (batch_size, n_features)
-            The data to use for computing gradients
+        minibatch: array-like, shape (n_features, batch_size)
+            The data to use for computing gradients to update H
         """
 
-        e = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
-        gradients,lowerbound = self._computeGradients(minibatch.T,e)
+        eps = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
+        gradients,lowerbound = self._computeGradients(minibatch.T,eps)
 
         for key in gradients:
             self.h[key] += gradients[key]**2
 
     def _computeGradients(self,x,eps):
+        """Perform backpropagation
+
+        Parameters
+        ----------
+
+        x: array-like, shape (n_features, batch_size)
+            The data to use for computing gradients to update the weights and biases
+        eps: array-like, shape (n_hidden_variables, batch_size)
+            The noise samples to compute z
+
+        Returns
+        -------
+        gradients : dictionary with ten or twelve array-like gradients to the weights and biases
+        lowerbound : int
+            Lower bound on the log likelihood per data point
+        """
         W1, W2, W3, W4, W5 = self.params["W1"], self.params["W2"], self.params["W3"], self.params["W4"], self.params["W5"]
         b1, b2, b3, b4, b5 = self.params["b1"], self.params["b2"], self.params["b3"], self.params["b4"], self.params["b5"]
 
@@ -165,7 +180,7 @@ class AEVB:
             logpxz = np.sum(x * np.log(y) + (1 - x) * np.log(1-y))
 
         KLD = 0.5 * np.sum(1 + 2*log_sigma_encoder - mu_encoder**2 - np.exp(2*log_sigma_encoder)) 
-        logp = logpxz + KLD
+        lowerbound = logpxz + KLD
 
         #W5: This is correct
         if self.continuous:
@@ -183,7 +198,6 @@ class AEVB:
             dp_db6   = np.sum(dp_dlogsigd * dy_dSig, axis = 1, keepdims = True)
 
         dSig_dHd = W5
-        #400x100
         dp_dHd   = ((dp_dy * dy_dSig).T.dot(dSig_dHd)).T
 
         if self.continuous:
@@ -191,28 +205,25 @@ class AEVB:
         else:
             dHd_df   = 1 - h_decoder**2
 
-        #W4: This is correct
+        #W4
         dp_dW4   = (dp_dHd * dHd_df).dot(z.T)
         dp_db4   = np.sum(dp_dHd * dHd_df, axis = 1, keepdims = True)
 
 
         dtanh_dz = W4
-        #Maybe just 1 is also good
-        dz_dmue  = np.ones_like(mu_encoder)
         dmue_dW2 = h_encoder
-        dmue_db2 = np.ones_like(b2)
 
         dp_dz    = (dp_dHd * dHd_df).T.dot(dtanh_dz)
-        dp_dmue  = dp_dz.T * dz_dmue
+        dp_dmue  = dp_dz.T
 
         dp_dW2   = dp_dmue.dot(dmue_dW2.T)
         dp_db2   = dp_dmue
 
         dKLD_dmue = -mu_encoder
         dKLD_dW2 = dKLD_dmue.dot(dmue_dW2.T)
-        dKLD_db2 = dKLD_dmue * dmue_db2
+        dKLD_db2 = dKLD_dmue
 
-        #W2: This is correct
+        #W2
         dp_dW2 += dKLD_dW2
         dp_db2 = np.sum(dp_db2 + dKLD_db2, axis = 1, keepdims = True)
 
@@ -220,7 +231,7 @@ class AEVB:
         dp_dlogsige = dp_dz.T * dz_dlogsige 
 
         dlogsige_dW3 = 0.5 * h_encoder
-        dlogsige_db3 = 0.5 * np.ones_like(b3)
+        dlogsige_db3 = 0.5
 
         dp_dW3   = dp_dlogsige.dot(dlogsige_dW3.T)
         dp_db3   = dp_dlogsige * dlogsige_db3
@@ -230,7 +241,7 @@ class AEVB:
         dKLD_dW3 = dKLD_dlogsige.dot(dlogsige_dW3.T)
         dKLD_db3 = dKLD_dlogsige * dlogsige_db3
 
-        #W3: this is correct
+        #W3
         dp_dW3 += dKLD_dW3
         dp_db3 = np.sum(dp_db3 + dKLD_db3, axis = 1, keepdims = True)
 
@@ -279,8 +290,8 @@ class AEVB:
 
         dKLD_dW1 = dKLD_dW1_1 + dKLD_dW1_2
         dKLD_db1 = dKLD_db1_1 + dKLD_db1_2
-
-        #W1: this is correct
+        ############################################
+ 
         dp_dW1 += dKLD_dW1
         dp_db1 = np.sum(dp_db1 + dKLD_db1, axis = 1, keepdims = True)
         ######################################
@@ -291,21 +302,33 @@ class AEVB:
         if self.continuous:
             gradients.update({"W6": dp_dW6, "b6": dp_db6})
 
-        return gradients, logp
+        return gradients, lowerbound
 
     def _updateParams(self,minibatch,N):
+        """Perform one update on the parameters
+
+        Parameters
+        ----------
+        minibatch : array-like, shape (n_features, batch_size)
+            The data to use for computing gradients to update the weights and biases
+        N : int
+            The total number of datapoints, used for prior correction
+
+
+        Returns
+        -------
+        lowerbound : int
+            Lower bound on the log likelihood per data point
+
+        """
         for l in xrange(self.sampling_rounds):
-            e = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
-            gradients,lowerbound = self._computeGradients(minibatch.T,e)
+            eps = np.random.normal(0,1,[self.n_hidden_variables,minibatch.shape[0]])
+            gradients,lowerbound = self._computeGradients(minibatch.T,eps)
 
             if 'total_gradients' not in locals():
                 total_gradients = gradients
             else:
                 for key in gradients:
-                    if np.isnan(np.sum(gradients[key])):
-                        print "The gradient " + key + " contain nans, that cannot be right"
-                        exit()
-
                     total_gradients[key] += gradients[key]
 
         for key in self.params:
@@ -320,6 +343,18 @@ class AEVB:
         return lowerbound
 
     def fit(self,data):
+        """Fit SGVB to the data
+
+        Parameters
+        ----------
+        data : array-like, shape (N, n_features)
+            The data that the SGVB needs to fit on
+
+        Returns
+        -------
+        list_lowerbound : list of int
+        list of lowerbound over time
+        """
         [N,dimX] = data.shape
         self._initParams(dimX)
         list_lowerbound = np.array([])
@@ -356,11 +391,35 @@ class AEVB:
         return list_lowerbound
 
     def transform(self,data):
+        """Transform the data
+
+        Parameters
+        ----------
+        data : array-like, shape (N, n_features)
+            The data that needs to be transformed
+
+        Returns
+        -------
+        data : array-like, shape (N, n_components_decoder)
+            The transformed data
+        """
         if self.continuous:
             return np.log(1+np.exp(data.dot(self.params["W1"].T) + self.params["b1"].T))
         else:
             return np.tanh(data.dot(self.params["W1"].T) + self.params["b1"].T)
 
-    def fit_transform(self,data,iterations):
-        self.fit(data,iterations)
+    def fit_transform(self,data):
+        """Fit and transform the data, wrapper for fit and transform
+
+        Parameters
+        ----------
+        data : array-like, shape (N, n_features)
+            The data that needs to be fitted to and transformed
+
+        Returns
+        -------
+        data : array-like, shape (N, n_components_decoder)
+            The transformed data
+        """
+        self.fit(data)
         return self.transform(data)

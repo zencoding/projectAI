@@ -4,11 +4,9 @@ Joost van Amersfoort - 10021248
 Otto Fabius - 5619858
 """
 
-"""A proof of concept with scikit learn implemenation of AEVB"""
-
 #example: python trainffscikit.py
 
-import scikitaevb
+import sgvb
 import numpy as np
 import gzip,cPickle
 
@@ -33,7 +31,7 @@ continuous = False
 
 verbose = True
 
-encoder = scikitaevb.AEVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
+encoder = sgvb.SGVB(HU_decoder,HU_encoder,dimZ,learning_rate,batch_size,n_iter,L,continuous,verbose)
 
 
 print "Iterating"

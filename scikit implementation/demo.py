@@ -6,7 +6,7 @@ Otto Fabius - 5619858
 
 """Demonstration comparing SGVB to RBM for feature extraction and classification"""
 
-import scikitaevb
+import sgvb
 import numpy as np
 import gzip,cPickle
 from sklearn import neural_network, linear_model
@@ -14,6 +14,8 @@ from sklearn import neural_network, linear_model
 load_params = False
 
 print "Loading data"
+#Retrieved from: http://deeplearning.net/data/mnist/mnist.pkl.gz
+
 f = gzip.open('mnist.pkl.gz', 'rb')
 (x_train, t_train), (x_valid, t_valid), (x_test, t_test)  = cPickle.load(f)
 f.close()
@@ -27,7 +29,7 @@ if load_params == True:
 
 else:
 	print 'extracting features with SGVB auto-encoder, default is 10 iterations...'
-	encoder = scikitaevb.AEVB(verbose=True)
+	encoder = sgvb.SGVB(verbose=True)
 	encoder.fit(x_train)
 	SGVB_train_features = encoder.transform(data_train)
 	SGVB_test_features  = encoder.transform(data_test)
