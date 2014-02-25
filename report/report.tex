@@ -35,25 +35,36 @@ Where $P(X|Z)$ and $P(Z|X)$ are parameterized by $\theta$.
 \\
 
 Knowing the probability distributions $P(X|Z)$ and $P(Z|X)$, i.e. learning $\theta$, can sometimes provide information on some natural process (if one is interested in the values of the parameters, for example). But knowing the distribution $P(Z|X)$ also allows us to infer $\mathbf{Z}$ from $\mathbf{X}$ to reduce the dimensionality of (encode) our data and find structure in the data. Furthermore, introducing a prior $P(Z)$ allows for computing the marginal probability $P(X)$ to generate data for applications such as image inpainting, denoising and super-resolution.
-We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int_z P(Z) P(X|Z) dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$	 becomes more complex, which severely limits these methods.
+We would like to learn $\theta$ by gradient ascent/descent by differentiating some objective w.r.t. $\theta$. This can be done by choosing the marginal likelihood $P(X) = \int_z P(Z) P(X|Z) dZ$ as objective to maximize, or by using the EM algorithm on the posterior density $ P(Z|X) = \frac{P(X|Z)P(Z)}{P(X)}$. However, calculating either  the marginal likelihood or the posterior density becomes intractable as the likelihood function $P(X|Z)$ becomes more complex, which severely limits these methods.
 
-\subsection{Sampling to obtain gradients}
+\subsection{The variational bound}
 
-Introducing $q(Z|X)$, parameterized by $\phi$, as an approximation of the posterior $P(Z|X)$, Kingma and Welling \cite{kingma2013auto} derive an expression for the Monte Carlo estimate of the lower bound $\mathcal{L}$ of the marginal likelihood $P(X)$:
+In order to efficiently find the likelihood function, \cite{kingma2013auto} introduce $q_\phi(z|x)$ which approximates the true posterior $p_\theta(z|x)$. The marginal likelihood of each datapoint i then becomes:
 
 \begin{align}
-\mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
+	\log p_\theta(x^{(i)}) = D_{KL}(q_\phi(\mathbf{z}|\mathbf{x}^{(i)}) || p_\theta(\mathbf{z}|\mathbf{x}^{(i)})) + \mathcal{L}(\mathbf{\theta}, \mathbf{\phi}; \mathbf{x}^{(i)})
+\end{align} 
+
+Where $\mathcal{L}(\mathbf{\theta}, \mathbf{\phi}; \mathbf{x}^{(i)})$ is called the variational lower bound on the marginal likelihood. This can be rewritten as:
+
+\begin{align}
+\mathcal{L}(\mathbf{\theta}, \mathbf{\phi}; \mathbf{x}^{(i)}) = D_{KL}(q_\phi(\mathbf{z}|\mathbf{x}^{(i)}) || p_\theta(\mathbf{z}|\mathbf{x}^{(i)})) + \mathcal(E)_{q_\phi(z|x^{(i)})} [\log p_\theta(x^{(i)}|z)]
 \end{align}
 
-%Check second sentence, starting with "Therefore..."
-Here, $z$ is sampled $L$ times from $q_{\phi}(z|x)$ for each data point $x^{(i)}$. Therefore, $z$ depends on parameters $\theta$, differentiating $\mathcal{L}$ w.r.t. $\phi$ will lead to a gradient which is influenced by the current parameters $\phi$. 
-As a solution to this problem, \cite{kingma2013auto} reparameterizes the samples of $z$ from $q(z|x)$ as
+Now, to be able to optimize the lowerbound, we need to be able to differentiate it with respect to both $\phi$ and $\theta$. However the gradient with respect to $\phi$ is not possible. As a solution to this problem, \cite{kingma2013auto} reparameterizes the samples of $z$ from $q(z|x)$ as
 \begin{align}
 z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim p(\mathbf{\epsilon}) 
 \end{align} 
 Where $p(\mathbf{\epsilon}) = N(0,I)$.
 
-Now, once we have a sample $\epsilon$, the MC-estimate of $\mathcal{L}$ (equation (1) ) does not depend on a \textit{sampled} $z$, but on a  $z$ which is \textit{calculated deterministically}. Thus, $\mathcal(L)$ can now be differentiated w.r.t all the parameters $\theta$ and $\phi$, enabling parameter optimization by means of stochastic gradient ascent.
+We can now form Monte Carlo estimates of expectations of some function f(z) with respect to $q_\phi(z|x)$. Yielding the following expression for the lower bound:
+
+\begin{align}
+\mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
+\end{align}
+
+\cite{kingma2013auto} derive an analytical expression for KLD, which we also use in our implementation as this reduces noise and computation time.
+
 
 \subsection{Modelling the conditional distributions}
 In our experiments, $q(Z|X)$ and $P(X|Z)$ are neural networks with a single hidden layer, similar to \cite{kingma2013auto}.  Obtaining the parameters for the Gaussian MLP $q(\mathbf{z}|\mathbf{x})$ from one data point $\mathbf{x}$ is now done through:
