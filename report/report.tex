@@ -39,6 +39,7 @@ We would like to learn $\theta$ by gradient ascent/descent by differentiating so
 
 \subsection{The variational bound}
 
+%wat betekent "efficiently find the likelihood function?"
 In order to efficiently find the likelihood function, \cite{kingma2013auto} introduce $q_\phi(z|x)$ which approximates the true posterior $p_\theta(z|x)$. The marginal likelihood of each datapoint i then becomes:
 
 \begin{align}
@@ -57,13 +58,14 @@ z = g_\phi(\mathbf{\epsilon},\mathbf{x}) \text{  with  } \mathbf{\epsilon} \sim 
 \end{align} 
 Where $p(\mathbf{\epsilon}) = N(0,I)$.
 
-We can now form Monte Carlo estimates of expectations of some function f(z) with respect to $q_\phi(z|x)$. Yielding the following expression for the lower bound:
+%volgende zin snap ik (nog?) niet
+We can now form Monte Carlo estimates of expectations of some function f(z) with respect to $q_\phi(z|x)$. This yields the following expression for the lower bound:
 
 \begin{align}
 \mathcal{L}(\theta ,\phi ,  \mathbf{x^{(i)}}) \backsimeq \frac{1}{L} \sum_{l=1}^{L} \text{log } p_{\theta} (x^{(i)}|z^{(l)})+ \text{log }p(z^{(l)}	)-\text{log }q_{\phi}(z^{(l)}|x^{(i)})
 \end{align}
 
-\cite{kingma2013auto} derive an analytical expression for KLD, which we also use in our implementation as this reduces noise and computation time.
+\cite{kingma2013auto} derive an analytical expression for KLD, which we also use in our implementation as this reduces noise and computation time. %hier nog iets van: "we can now perform stochastic gradient ascent on the lower bound" of zo?
 
 
 \subsection{Modelling the conditional distributions}
